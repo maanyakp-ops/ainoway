@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Rat: Takeshi's Cat Maze</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-    }
-    body {
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portal Rat</title>
+<style>
+:root{--cream:#fdf3e1;--navy:#1f2a6b;--gold:#d4a634}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--cream);color:var(--navy);font-family:"Press Start 2P",ui-monospace,Menlo,Consolas,monospace;display:flex;flex-direction:column;align-items:center;padding:14px 8px 20px;
+ background-image:linear-gradient(rgba(31,42,107,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(31,42,107,.05) 1px,transparent 1px);background-size:24px 24px}
+canvas{width:min(96vw,calc((100vh - 110px) * 1.111),720px);height:auto;image-rendering:pixelated;border:4px solid var(--navy);box-shadow:6px 6px 0 var(--gold);background:#8fd3f4;cursor:pointer}
+#bar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+button{font-family:inherit;font-size:10px;color:var(--navy);background:#fff8ea;border:3px solid var(--navy);box-shadow:3px 3px 0 var(--navy);padding:9px 11px;cursor:pointer}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--navy)}
+#help{margin-top:10px;font-size:8px;line-height:1.8;text-align:center;opacity:.8}
+body.gameBody{background:#0b0f17;color:#e6edf3;font-family:ui-monospace,Menlo,Consolas,monospace;background-image:none;padding:12px}
+
+    
+    body.gameBody {
       background-color: #0b0f17;
       color: #e6edf3;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -32,7 +39,7 @@
       background: #11141c;
       max-width: 100%;
     }
-    canvas {
+    #gameCanvas {
       display: block;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
@@ -45,7 +52,7 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      max-width: 960px;
+      max-width: 100%;
       background: #161b26;
       border: 2px solid #283042;
       border-bottom: none;
@@ -77,7 +84,7 @@
     }
     .bottom-bar {
       width: 100%;
-      max-width: 960px;
+      max-width: 100%;
       background: #161b26;
       border: 2px solid #283042;
       border-top: none;
@@ -146,62 +153,186 @@
       border: 1px solid rgba(202, 138, 4, 0.5);
       font-size: 12px;
     }
-  </style>
+  
+.badge-red{background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid #b91c1c}
+#gameView{width:min(1200px,100%,calc((100vh - 120px) * 1.3333))}
+#gameCanvas{width:100%}
+</style>
+<style>
+
+    #captchaView {
+      --bg: #090b10;
+      --card-bg: #121824;
+      --cyan: #00f3ff;
+      --pink: #ff0055;
+      --green: #00ff66;
+      --yellow: #ffcc00;
+      --text: #e0f0ff;
+    }
+
+    #captchaView * { box-sizing:border-box; user-select:none; -webkit-user-select:none; font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,sans-serif; }
+
+    body.capBody { margin:0; padding:16px; background:radial-gradient(circle at center,#151c2e,#090b10); color:#e0f0ff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; overflow-x:hidden; }
+
+    #captchaView .container {
+      background: rgba(18, 24, 36, 0.95);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+      width: 100%;
+      max-width: 600px;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    #captchaView h1 {
+      margin: 0 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 1.35rem;
+      color: var(--cyan);
+      text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+    }
+
+    #captchaView p.subtitle {
+      margin: 0 0 14px;
+      font-size: 0.85rem;
+      color: #7b92b2;
+      min-height: 20px;
+    }
+
+    #captchaView .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    #captchaView .badge {
+      font-size: 0.72rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #captchaView .badge.active {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+    }
+
+    #captchaView .badge.cleared {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    #captchaView canvas {
+      background: #06090e;
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 560px;
+      height: auto;
+      aspect-ratio: 2 / 1;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    #captchaView .controls-panel {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #captchaView .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 90%;
+      max-width: 440px;
+      font-size: 0.85rem;
+    }
+
+    #captchaView input[type="range"] {
+      flex: 1;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    #captchaView .status-msg {
+      font-size: 0.9rem;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      min-height: 22px;
+    }
+
+    #captchaView .hidden {
+      display: none !important;
+    }
+  
+#captchaView canvas { box-shadow:none !important; image-rendering:auto !important; }
+
+</style>
 </head>
-<body>
-
-  <!-- Top Status Bar -->
-  <div class="hud-bar">
-    <div style="display:flex; align-items:center; gap: 14px;">
-      <span style="display:flex; align-items:center; gap: 6px; color: #fbbf24; font-weight: bold;">
-        <span>🐀</span>
-        <span>PORTAL RAT</span>
-      </span>
-      <span id="radar-badge" class="radar-box">
-        🧀 CHEESE DISTANCE: CALCULATING...
-      </span>
+<body class="capBody">
+<div id="captchaView">
+<div id="captcha-container" class="container">
+    <div class="badge-bar">
+      <span id="badge1" class="badge active">Phase 1: Laser Lock</span>
+      <span id="badge2" class="badge">Phase 2: Firewall Drift</span>
     </div>
 
-    <div style="display:flex; align-items:center; gap: 12px;">
-      <div style="display:flex; align-items:center; gap: 8px;">
-        <span style="font-size: 11px; color: #94a3b8;">PORTALS:</span>
-        <span id="badge-blue" class="badge badge-blue">● BLUE [Q/LMB]</span>
-        <span id="badge-orange" class="badge badge-orange">● ORANGE [E/RMB]</span>
+    <!-- ROUND 1 -->
+    <div id="phase1-ui">
+      <h1>Phase 1: Optical Alignment</h1>
+      <p class="subtitle">Rotate the reflective prism to connect the laser to the sensor node.</p>
+      <canvas id="canvas1" width="560" height="280"></canvas>
+      <div class="controls-panel">
+        <div class="slider-row">
+          <span>Deflection:</span>
+          <input type="range" id="prismAngle" min="-60" max="60" value="0" step="0.5" />
+          <span id="angleVal" style="min-width: 40px; text-align: right;">0°</span>
+        </div>
+        <div id="msg1" class="status-msg" style="color: var(--yellow);">Adjust prism to align the beam...</div>
       </div>
-      <button class="btn-arcade muted" id="sound-btn" onclick="toggleAudio()">🔊 SFX: ON</button>
     </div>
-  </div>
 
-  <!-- Game Container with CRT Japanese TV aesthetic -->
-  <div id="game-wrapper">
-    <canvas id="gameCanvas" width="960" height="720"></canvas>
-    <div class="crt-watermark">TBS 2 &nbsp;10:54</div>
-  </div>
-
-  <!-- Bottom Controls & Action Bar -->
-  <div class="bottom-bar">
-    <div style="display:flex; flex-wrap:wrap; align-items:center; gap: 8px;">
-      <span>MOVE:</span>
-      <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span>
-      <span style="color: #475569;">|</span>
-      <span>DOORS:</span>
-      <span style="color: #cbd5e1;">Push into door panel</span>
-      <span style="color: #475569;">|</span>
-      <span>PORTALS:</span>
-      <span class="key-badge">Left Click</span> / <span class="key-badge">Q</span> : Blue &nbsp;
-      <span class="key-badge">Right Click</span> / <span class="key-badge">E</span> : Orange
-    </div>
-    <div style="display:flex; align-items:center; gap: 8px;">
-      <button class="btn-arcade" onclick="restartMaze()">🔄 RESET (R)</button>
-      <button class="btn-arcade muted" onclick="generateNewRandomMaze()">🎲 NEW LAYOUT</button>
+    <!-- ROUND 2 -->
+    <div id="phase2-ui" class="hidden">
+      <h1>Phase 2: Firewall Infiltration</h1>
+      <p id="sub2" class="subtitle">Click & hold the data core at START, pick up 2 keys, and escape!</p>
+      <canvas id="canvas2" width="560" height="280"></canvas>
+      <div class="controls-panel">
+        <div id="msg2" class="status-msg" style="color: var(--cyan);">Keys: 0 / 2</div>
+      </div>
     </div>
   </div>
+</div>
+<div id="introView" style="display:none;flex-direction:column;align-items:center">
+<canvas id="cv" width="480" height="432"></canvas>
+<div id="bar"><button id="bSkip">SKIP INTRO</button><button id="bReplay">REPLAY</button><button id="bMute">SOUND: ON</button></div>
+<div id="help">Click / Enter / Space: continue &nbsp; Arrow keys: menu &nbsp; Esc: skip &nbsp; M: mute</div>
+</div>
+<div id="gameView" style="display:none">
+<div class="hud-bar">
+ <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span style="color:#fbbf24;font-weight:bold">🐀 PORTAL RAT</span><span id="lvl-badge" class="badge badge-blue">LEVEL 1</span><span id="radar-badge" class="radar-box">…</span></div>
+ <div style="display:flex;align-items:center;gap:10px"><span id="gun-badge" class="badge badge-red">NO PORTAL GUN</span><button class="btn-arcade muted" id="sound-btn" onclick="window.__audio.muted=!window.__audio.muted;this.innerText=window.__audio.muted?'🔇 SFX: OFF':'🔊 SFX: ON'">🔊 SFX: ON</button></div>
+</div>
+<div id="game-wrapper"><canvas id="gameCanvas" width="1200" height="900"></canvas></div>
+<div class="bottom-bar"><div id="hint">MOVE: <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span> &nbsp; GNAW: hold <span class="key-badge">SPACE</span> at the box &nbsp; RESTART: <span class="key-badge">R</span></div>
+ <div><button class="btn-arcade" onclick="window.__g.restart()">🔄 RESTART (R)</button> <button class="btn-arcade muted" onclick="window.__rat.startIntro()">🎬 REPLAY INTRO</button></div></div>
+</div>
 
 <script>
-/* ==========================================================================
-   WEB AUDIO SOUND SYNTHESIZER
-   Zero external audio files - fully procedural retro synthesized sounds!
-   ========================================================================== */
 class AudioSynthesizer {
   constructor() {
     this.ctx = null;
@@ -238,23 +369,18 @@ class AudioSynthesizer {
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
-
     osc.type = 'sawtooth';
     const baseFreq = color === 'blue' ? 480 : 340;
     osc.frequency.setValueAtTime(baseFreq, t);
     osc.frequency.exponentialRampToValueAtTime(baseFreq * 3.2, t + 0.16);
-
     filter.type = 'bandpass';
     filter.frequency.setValueAtTime(baseFreq * 2, t);
     filter.Q.setValueAtTime(3.5, t);
-
     gain.gain.setValueAtTime(0.2, t);
     gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.ctx.destination);
-
     osc.start(t);
     osc.stop(t + 0.2);
   }
@@ -317,15 +443,12 @@ class AudioSynthesizer {
     meow.frequency.setValueAtTime(650, t);
     meow.frequency.linearRampToValueAtTime(1300, t + 0.15);
     meow.frequency.linearRampToValueAtTime(320, t + 0.55);
-
     meowGain.gain.setValueAtTime(0.35, t);
     meowGain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
-
     meow.connect(meowGain);
     meowGain.connect(this.ctx.destination);
     meow.start(t);
     meow.stop(t + 0.6);
-
     // Deep sub impact
     const sub = this.ctx.createOscillator();
     const subGain = this.ctx.createGain();
@@ -338,7 +461,6 @@ class AudioSynthesizer {
     subGain.connect(this.ctx.destination);
     sub.start(t);
     sub.stop(t + 0.5);
-
     // Crunch / Chomp at 0.45s
     setTimeout(() => {
       if (this.muted || !this.ctx) return;
@@ -376,1380 +498,1455 @@ class AudioSynthesizer {
   }
 }
 
-const audio = new AudioSynthesizer();
-function toggleAudio() {
-  audio.muted = !audio.muted;
-  document.getElementById('sound-btn').innerText = audio.muted ? '🔇 SFX: OFF' : '🔊 SFX: ON';
+</script>
+<script>
+// Pixel sprites as character grids. '.' = transparent.
+// K outline, D dark body, M mid body, L light/belly, G gold, P pink, R brown, r light brown,
+// T teal, W white, O orange, S slate, s light slate, q tail pink
+const SPRITES = {
+  cat: { parts: [
+    { x: 0, y: 0, rows: [
+      ".KK..........KK.....",
+      ".KDK........KGK.....",
+      ".KDDKKKKKKKKDDK.....",
+      "KDDDDDDDDDDDDDDK....",
+      "KDDDDDDDDDDDDDDK....",
+      "KDDGGDDDDDDGGDDK....",
+      "KDDGKDDDDDDKGDDK....",
+      "KDDDDDDPPDDDDDDK....",
+      ".KDDDDDLLDDDDDK.....",
+      "..KKDDDDDDDDKK......",
+      "...KDDLLLLDDK.......",
+      "..KDDLLLLLLDDK......",
+      "..KDDLLLLLLDDK......",
+      "..KDDDLLLLDDDK......",
+      "..KDDDDLLDDDDK......",
+      "..KDDDDDDDDDDK......",
+      "..KKLLLKKLLLKK......",
+      "...KKKKKKKKKK......."
+    ]},
+    { x: 14, y: 8, rows: [
+      "..KGGK",
+      "..KGGK",
+      "..KDDK",
+      "..KDDK",
+      ".KDDK.",
+      ".KDDK.",
+      "KDDK..",
+      "KDDKKK",
+      "KDDDDK",
+      "KKKKKK"
+    ]}
+  ]},
+  eagle: { parts: [
+    { x: 0, y: 0, rows: [
+      ".....K...KK...K.....",
+      "....KHK.KHHK.KHK....",
+      "...KHHHHHHHHHHHHK...",
+      "...KHHHHHHHHHHHHK...",
+      "..KHHKKHHHHHHKKHHK..",
+      "..KHHGGHHHHHHGGHHK..",
+      "..KHHGKHHHHHHKGHHK..",
+      "..KHHHHGGGGGGHHHHK..",
+      "...KHHHGGGGGGHHHK...",
+      "....KKHHGGGGHHKK....",
+      ".....KKKHGGHKKK.....",
+      "...KddMMMMMMMMddK...",
+      "..KdddMMLMMLMMdddK..",
+      "..KdddMLMMLMMLdddK..",
+      "..KdddMMLMMLMMdddK..",
+      "..KdddMLMMLMMLdddK..",
+      "...KddMMMMMMMMddK...",
+      "...KdddMMMMMMdddK...",
+      "....KKddddddddKK....",
+      "....KGGK....KGGK....",
+      "...KGGGGK..KGGGGK...",
+      "...KKKKKK..KKKKKK..."
+    ]}
+  ]},
+  rat: { parts: [
+    { x: 0, y: 0, rows: [
+      "....KK..............................",
+      "...KGGK............KKK..............",
+      "...KSK............KRRRK.............",
+      "...KSK...........KRPPPRKKKK.........",
+      "....KSK.........KRRPPPRRRRRKK.......",
+      "....KSK.........KRRPPPRRRRRRRK......",
+      ".....KSK.........KRPPPRRRRTRRRK.....",
+      "....KKSKKKKKKK...KSSSSSSTWTTTRK.....",
+      "...KSSSSSSSSSSK...KRRRRRTTTTTRKK....",
+      "...KSSSSSSSSSSK..KRRRRRRTTKTTRRRK..W",
+      "...KSSssssssSSSKKKKRRRRRTTTTTRRRK.W.",
+      "...KSSsOOsTsSSSRRRRRRRRRRRTRRRRRKK..",
+      "...KSSsOOsTsSSSRRRRRRRRRRRRRRRRRRKW.",
+      "...KSSssssssSSSRRRRRRRRRRSTTTTTTTTKW",
+      "...KSSsTTTTsSSSRRRRRRRRRRWWWWWWWWOOO",
+      "...KSSSSSSSSSSSRRRRRRRRRRWWWWWTTWOOO",
+      "...KSSSSSSSSSSSrrrrrrRRRRWWWWWTTWOOO",
+      "....KKKKRRRRRrrrrrrrrrrrRWWWWWWWWOOO",
+      "......KqKRRRRrrrrrrrrrrrKKKSSKKKKKKK",
+      ".....KqKKRRRRrrrrrrrrrrrK.KSSK......",
+      "....KqK.KKKRRRRrrrrrRRRK...KK.......",
+      "...KqK.KqKKRRRRRRRRRRRRK............",
+      "...KqKKqK.KRRRKKKKKKRRRK............",
+      "....KqqK.KrrrrrK..KrrrrrK...........",
+      ".....KK...KKKKK....KKKKK............"
+    ]}
+  ]}
+};
+
+
+</script>
+
+<script>
+(() => {
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const W = 480, H = 432;
+const NAVY = '#1f2a6b', INK = '#12163f', CREAM = '#fdf3e1', GOLD = '#d4a634';
+// non-blocking font load (page never waits on the network)
+try { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'; document.head.appendChild(l); } catch (e) {}
+const C0 = NAVY;
+
+const COLOR = {K:'#12163f',D:'#1f2a6b',M:'#34479e',L:'#fdf3e1',G:'#d4a634',P:'#f4a6b4',R:'#8a5a3a',r:'#c08a5e',T:'#3fb7c0',W:'#f4f4f4',O:'#ff8a1f',S:'#3a4252',s:'#5b6577',q:'#e9a0a8',H:'#fdf3e1',d:'#1b2358'};
+// gun-less rat (level 1) and the loose gun, both cut from the rat sprite
+(function () {
+  const rows = SPRITES.rat.parts[0].rows, GX = 25, GY0 = 13;
+  const ng = rows.map((r, j) => j >= GY0 ? (r.slice(0, GX) + '.'.repeat(Math.max(0, r.length - GX))) : r);
+  for (let j = 13; j <= 17; j++) ng[j] = ng[j].slice(0, GX) + 'K' + ng[j].slice(GX + 1);
+  SPRITES.ratng = {parts: [{x: 0, y: 0, rows: ng}]};
+  const gun = [];
+  for (let j = GY0; j <= 20; j++) gun.push(rows[j].slice(GX).replace(/[^WTOSK]/g, '.'));
+  SPRITES.gun = {parts: [{x: 0, y: 0, rows: gun}]};
+})();
+
+// ---- sprite rendering (cached per palette) ----
+const cache = {};
+function sprite(name, pal) {
+  const key = name + '|' + pal;
+  if (cache[key]) return cache[key];
+  const sp = SPRITES[name];
+  let w = 0, h = 0;
+  for (const p of sp.parts) { w = Math.max(w, p.x + Math.max(...p.rows.map(r => r.length))); h = Math.max(h, p.y + p.rows.length); }
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), map = COLOR;
+  for (const p of sp.parts) p.rows.forEach((row, j) => [...row].forEach((ch, i) => {
+    if (ch === '.') return; g.fillStyle = map[ch]; g.fillRect(p.x + i, p.y + j, 1, 1);
+  }));
+  return (cache[key] = c);
+}
+function drawSprite(name, pal, x, y, unit, clipBottom) {
+  const c = sprite(name, pal);
+  ctx.imageSmoothingEnabled = false;
+  if (clipBottom !== undefined) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, clipBottom); ctx.clip(); }
+  ctx.drawImage(c, Math.round(x), Math.round(y), c.width * unit, c.height * unit);
+  if (clipBottom !== undefined) ctx.restore();
 }
 
-/* ==========================================================================
-   MAZE ENGINE & GAME CONSTANTS
-   Replicating Takeshi's Castle: 3 Rows x 4 Columns cubicle room grid!
-   ========================================================================== */
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+// ---- audio ----
+let ac = null, muted = false;
+function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return ac; }
+function tone(f, d, type, v, to) {
+  if (muted) return; const a = audio(); if (!a) return;
+  try {
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+    o.type = type || 'square'; o.frequency.setValueAtTime(f, t);
+    if (to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+    g.gain.setValueAtTime(v || .04, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + .02);
+  } catch (e) {}
+}
 
-const COLS = 4;
-const ROWS = 3;
-const GRID_X = 40;
-const GRID_Y = 30;
-const GRID_W = 880;
-const GRID_H = 660;
-const CELL_W = GRID_W / COLS; // 220px
-const CELL_H = GRID_H / ROWS; // 220px
-const BEAM_W = 20;
-const WALL_THICK = 10;
-const DOOR_W = 60;
-const DOOR_H = 16;
+// ---- helpers ----
+const ease = t => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+const clamp01 = t => Math.max(0, Math.min(1, t));
+function box(x, y, w, h) {
+  ctx.fillStyle = NAVY; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = GOLD; ctx.fillRect(x + 4, y + 4, w - 8, h - 8);
+  ctx.fillStyle = CREAM; ctx.fillRect(x + 7, y + 7, w - 14, h - 14);
+}
+function text(str, x, y, size, col, lh) {
+  ctx.font = size + 'px "Press Start 2P", monospace'; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = col || C0;
+  String(str).split('\n').forEach((l, i) => ctx.fillText(l, x, y + i * (lh || size + 12)));
+}
+function ellipse(cx, cy, rx, ry, fill, stroke) {
+  ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 4; ctx.stroke(); }
+}
+function hpBar(x, y, w, frac) {
+  text('HP', x, y - 1, 10, C0);
+  ctx.fillStyle = NAVY; ctx.fillRect(x + 28, y, w + 4, 12);
+  ctx.fillStyle = '#e4d6bb'; ctx.fillRect(x + 30, y + 2, w, 8);
+  ctx.fillStyle = frac > .5 ? '#3fa34d' : frac > .25 ? '#e0b030' : '#d6453d'; ctx.fillRect(x + 30, y + 2, Math.round(w * frac), 8);
+}
 
-let gameState = 'PLAYING'; // 'PLAYING', 'CAT_ATTACK', 'GAMEOVER', 'VICTORY'
-let attackTimer = 0;
-let screenShake = 0;
-let deathDoorInfo = null;
+// ---- layout ----
+const RAT = {x: 16, y: 144, u: 6}, CAT = {x: 262, y: 62, u: 5}, EAGLE = {x: 366, y: 42, u: 5};
+const MENU = ['FIGHT', 'ITEMS', 'RUN', 'PORTAL'];
+const MENU_POS = i => ({x: 268 + (i % 2) * 104, y: 346 + Math.floor(i / 2) * 36});
 
-let rooms = [];
-let particles = [];
-let bullets = [];
+// ---- state ----
+let state = 'title', t0 = 0, now = 0, ended = false;
+let msg = null;               // {text, cb, start, shown}
+let menuSel = 3, lastBlipChars = 0;
 
-const player = {
-  x: 0,
-  y: 0,
-  radius: 13,
-  speed: 3.4,
-  walkCycle: 0,
-  moving: false,
-  bluePortal: null,
-  orangePortal: null,
-  teleportCooldown: 0
-};
+function setState(s) { state = s; t0 = now; }
+function say(text, cb) { msg = {text, cb, start: now}; lastBlipChars = 0; setState('text'); }
 
-const cheese = {
-  cellX: 3,
-  cellY: 0,
-  x: 0,
-  y: 0,
-  collected: false,
-  glow: 0
-};
+function scene(o) {
+  o = o || {};
+  const eo = o.eo || 0, ro = o.ro || 0, bob = o.bob === false ? 0 : 1;
+  const sky = ctx.createLinearGradient(0, 0, 0, 322); sky.addColorStop(0, '#7cc6f0'); sky.addColorStop(1, '#fdf3e1');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // platforms
+  ellipse(312 + eo, 154, 54, 12, '#7ccf62', '#2f6b34');
+  ellipse(416 + eo, 154, 54, 12, '#7ccf62', '#2f6b34');
+  ellipse(124 + ro, 298, 112, 16, '#7ccf62', '#2f6b34');
+  // enemies
+  const b1 = bob * Math.sin(now / 280) * 2, b2 = bob * Math.sin(now / 280 + 1.6) * 2;
+  drawSprite('cat', 'color', CAT.x + eo, CAT.y + b1, CAT.u);
+  drawSprite('eagle', 'color', EAGLE.x + eo, EAGLE.y + b2, EAGLE.u);
+  // rat
+  if (!o.noRat) drawSprite(o.noGun ? 'ratng' : 'rat', 'color', RAT.x + ro, RAT.y + (o.ratDy || 0), RAT.u, o.ratClip);
+  if (o.boxes) {
+    box(10, 10, 210, 96);
+    text('CAT', 26, 24, 12); hpBar(26, 40, 120, 1);
+    text('EAGLE', 26, 62, 12); hpBar(26, 78, 120, 1);
+    box(262, 226, 212, 74);
+    text('RAT', 278, 240, 12); hpBar(278, 262, 100, .4);
+  }
+}
 
-// 2D Pixelated Cat Attack Animation State
-const catAttack = {
-  x: 0,
-  y: 0,
-  startX: 0,
-  startY: 0,
-  scale: 0.1,
-  mouthStage: 0,
-  pawY: 0
-};
+function stripes(p) { // p: 0 none .. 1 full cover
+  const n = 12, bh = H / n;
+  ctx.fillStyle = INK;
+  for (let i = 0; i < n; i++) {
+    const pi = clamp01(p * 1.7 - i * 0.06), w = pi * W;
+    if (i % 2 === 0) ctx.fillRect(0, i * bh, w, bh + 1); else ctx.fillRect(W - w, i * bh, w, bh + 1);
+  }
+}
 
-/* ==========================================================================
-   PIXEL ART ASSETS (Procedural Matrix Definitions)
-   True 2D retro pixel art for Cat, Rat, and Props!
-   ========================================================================== */
-// Terrifying 2D Pixelated Cat Matrix (24x22 pixels)
-const PIXEL_CAT_MATRIX = [
-  "   BB              BB   ",
-  "  BEEB            BEEB  ",
-  " BEEFFB          BFFEEB ",
-  " BEEFFFB        BFFFFEEB",
-  " BFFFFFFBBBBBBBBFFFFFFFB",
-  "BFFFFFFFFFFFFFFFFFFFFFFB",
-  "BFFFFFFFFFFFFFFFFFFFFFFB",
-  "BFFYYYYYFFFFFFFFYYYYYFFB",
-  "BFYYYYYYYFFFFFFYYYYYYYFB",
-  "BFYYRRRYYFFFFFFYYRRRYYFB",
-  "BFYYRRRYYFFFFFFYYRRRYYFB",
-  "BFFYYYYYFFFFFFFFYYYYYFFB",
-  "BFFFFFFFFFFWWFFFFFFFFFFB",
-  "BFFFFFFFFFRPPRFFFFFFFFFB",
-  "BWWWWWWWWFRPPRFDDDDDDDDB",
-  "BWWWWWWWWFRPPRFDDDDDDDDB",
-  "BFFFFFFFFFFPPFFFFFFFFFFB",
-  "BFFFTTTTTTTTTTTTTTTTFFFB",
-  " BFFFTTTTTTTTTTTTTTFFFB ",
-  "  BFFFFFFFFFFFFFFFFFFB  ",
-  "   BBBBBBBBBBBBBBBBBB   "
+function drawTextBox(m, withMenu) {
+  if (withMenu) { box(8, 322, 232, 100); box(240, 322, 232, 100); }
+  else box(8, 322, 464, 100);
+}
+
+function typed(m) { return Math.min(m.text.length, Math.floor((now - m.start) / 28)); }
+
+function end() {
+  // full-colour placeholder card for step 1
+  const fade = 1 - clamp01((now - t0) / 700);
+  ctx.fillStyle = '#3a2a24'; ctx.fillRect(0, 0, W, H);
+  for (let r = 0; r < 18; r++) for (let c = -1; c < 7; c++) {
+    const off = (r % 2) * 40, x = c * 80 + off, y = r * 20, v = ((r * 7 + c * 13) % 5) * 5;
+    ctx.fillStyle = 'rgb(' + (126 + v) + ',' + (82 + v) + ',' + (64 + v) + ')'; ctx.fillRect(x + 2, y + 2, 76, 16);
+  }
+  // metal floor
+  ctx.fillStyle = '#2a2f3a'; ctx.fillRect(0, 330, W, H - 330);
+  ctx.strokeStyle = '#444b5a'; ctx.lineWidth = 2;
+  for (let x = 0; x < W; x += 16) { ctx.beginPath(); ctx.moveTo(x, 330); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 330; y < H; y += 16) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  // sign
+  ctx.fillStyle = '#12163f'; ctx.fillRect(116, 24, 248, 52);
+  ctx.fillStyle = '#d4a634'; ctx.fillRect(120, 28, 240, 44);
+  text('TEST CHAMBER', 140, 36, 14, '#12163f'); text('01', 224, 54, 12, '#12163f');
+  // caution
+  ctx.fillStyle = '#12163f'; ctx.fillRect(378, 100, 84, 40);
+  ctx.fillStyle = '#d4a634'; ctx.fillRect(382, 104, 76, 32); text('CAUTION', 388, 114, 8, '#12163f');
+  // rat in colour + floor shadow
+  ellipse(240, 334, 120, 14, 'rgba(0,0,0,.35)');
+  drawSprite('ratng', 'color', 132, 184 + Math.sin(now / 400) * 2, 6);
+  // caption
+  ctx.fillStyle = 'rgba(18,22,63,.85)'; ctx.fillRect(40, 378, 400, 38);
+  text('Level 1: no portal gun!', 56, 388, 10, '#fdf3e1');
+  text('[R] replay', 56, 404, 8, '#d4a634');
+  if (fade > 0) { ctx.fillStyle = 'rgba(255,255,255,' + fade + ')'; ctx.fillRect(0, 0, W, H); }
+}
+
+const MSGS = [
+  'A CAT and an EAGLE\nappeared!',
+  'They took the RAT\'s family.\nNow it is all alone.',
+  'But the RAT found a\nPORTAL GUN!'
 ];
 
-const CAT_PALETTE = {
-  'B': '#09050d', // Pitch black pixel border
-  'F': '#1f132b', // Deep sinister purple-black fur
-  'E': '#ff2a6d', // Hot neon pink inner ear
-  'Y': '#ffee00', // Blazing evil yellow eyes
-  'R': '#ff0033', // Slit red pupil
-  'W': '#ffffff', // White fangs & whiskers
-  'P': '#ff6b97', // Pink nose
-  'T': '#f8fafc', // Razor sharp teeth
-  'D': '#ffffff'  // Right whiskers
-};
+function startIntro() {
+  ended = false; if (window.__stopGame) window.__stopGame();
+  tone(880, .08, 'square', .05);
+  setState('flash'); msg = null; menuSel = 3;
+}
+function skipIntro() { setState('end'); }
 
-/* ==========================================================================
-   MAZE GENERATION LOGIC
-   Takeshi's Castle knock-knock door maze:
-   Some doors are real passages; some are fake or deadly wrong doors!
-   ========================================================================== */
-function setupMaze() {
-  rooms = [];
-  gameState = 'PLAYING';
-  attackTimer = 0;
-  screenShake = 0;
-  particles = [];
-  bullets = [];
-  player.bluePortal = null;
-  player.orangePortal = null;
-  player.teleportCooldown = 0;
+function confirm() {
+  audio();
+  if (state === 'title') { startIntro(); return; }
+  if (state === 'text' && msg) {
+    if (typed(msg) < msg.text.length) { msg.start = now - msg.text.length * 28; return; }
+    tone(660, .06); const cb = msg.cb; cb && cb(); return;
+  }
+  if (state === 'menu') { chooseMenu(); }
+}
+function chooseMenu() {
+  tone(660, .08);
+  if (menuSel === 0) say('RAT is too small to\nFIGHT them!', () => setState('menu'));
+  else if (menuSel === 1) say('The bag only holds\none PORTAL GUN.', () => setState('menu'));
+  else if (menuSel === 2) say('Can\'t run!\nThey block the way.', () => setState('menu'));
+  else say('RAT used PORTAL!', () => setState('portal'));
+}
 
-  // Start bottom-left (0, 2); Cheese top-right (3, 0)
-  const startX = 0;
-  const startY = 2;
-  cheese.cellX = 3;
-  cheese.cellY = 0;
-  cheese.x = GRID_X + cheese.cellX * CELL_W + CELL_W / 2;
-  cheese.y = GRID_Y + cheese.cellY * CELL_H + CELL_H / 2;
-  cheese.collected = false;
-
-  player.x = GRID_X + startX * CELL_W + CELL_W / 2;
-  player.y = GRID_Y + startY * CELL_H + CELL_H / 2;
-
-  // Initialize empty rooms
-  for (let r = 0; r < ROWS; r++) {
-    rooms[r] = [];
-    for (let c = 0; c < COLS; c++) {
-      rooms[r][c] = {
-        col: c,
-        row: r,
-        scuffs: generateFloorScuffs(),
-        doors: {
-          N: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r - 1, targetC: c },
-          S: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r + 1, targetC: c },
-          W: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r, targetC: c - 1 },
-          E: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r, targetC: c + 1 }
+function frame(ts) {
+  now = ts; ctx.imageSmoothingEnabled = false;
+  const t = now - t0;
+  switch (state) {
+    case 'title': {
+      const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#7cc6f0'); sky.addColorStop(1, '#fdf3e1');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      ellipse(240, 300, 150, 18, '#7ccf62', '#2f6b34');
+      drawSprite('rat', 'color', 132, 130, 6);
+      text('PORTAL RAT', 126, 60, 22, NAVY);
+      if (Math.floor(now / 500) % 2 === 0) text('PRESS START', 142, 350, 16, NAVY);
+      break;
+    }
+    case 'flash': {
+      const k = Math.floor(t / 110);
+      if (t / 110 - k < .05 && k < 9) tone(k % 2 ? 300 : 500, .05, 'square', .03);
+      ctx.fillStyle = k % 2 ? INK : CREAM; ctx.fillRect(0, 0, W, H);
+      if (t > 1000) setState('cover');
+      break;
+    }
+    case 'cover': {
+      scene({eo: 260, ro: -260, bob: false});
+      stripes(ease(t / 700));
+      if (t > 700) setState('uncover');
+      break;
+    }
+    case 'uncover': {
+      scene({eo: 260, ro: -260, bob: false});
+      stripes(1 - ease(t / 700));
+      if (t > 700) { setState('slide'); tone(110, .25, 'sawtooth', .05); }
+      break;
+    }
+    case 'slide': {
+      const e = ease(t / 1200);
+      scene({eo: (1 - e) * 260, ro: -(1 - e) * 260});
+      if (t > 1300) say(MSGS[0], next1);
+      break;
+    }
+    case 'text': case 'menu': {
+      scene({boxes: true});
+      const withMenu = state === 'menu';
+      drawTextBox(msg, withMenu);
+      if (state === 'text' && msg) {
+        const n = typed(msg);
+        if (n > lastBlipChars && n % 2 === 0) tone(520, .025, 'square', .02);
+        lastBlipChars = n;
+        text(msg.text.slice(0, n), 28, 344, 14, NAVY, 28);
+        if (n >= msg.text.length && Math.floor(now / 450) % 2 === 0) {
+          ctx.fillStyle = NAVY; ctx.beginPath(); ctx.moveTo(436, 394); ctx.lineTo(452, 394); ctx.lineTo(444, 406); ctx.fill();
         }
-      };
-    }
-  }
-
-  // Generate safe path from Start to Cheese
-  const safeDoors = new Set();
-  function addSafeEdge(c1, r1, c2, r2) {
-    safeDoors.add(`${c1},${r1}->${c2},${r2}`);
-    safeDoors.add(`${c2},${r2}->${c1},${r1}`);
-  }
-
-  // 2 alternative path walks to allow exploring
-  for (let path = 0; path < 2; path++) {
-    let curr = { c: startX, r: startY };
-    let safety = 0;
-    while ((curr.c !== cheese.cellX || curr.r !== cheese.cellY) && safety < 30) {
-      safety++;
-      const options = [];
-      if (curr.c < COLS - 1) options.push({ c: curr.c + 1, r: curr.r });
-      if (curr.r > 0) options.push({ c: curr.c, r: curr.r - 1 });
-      if (curr.c > 0 && Math.random() < 0.3) options.push({ c: curr.c - 1, r: curr.r });
-      if (curr.r < ROWS - 1 && Math.random() < 0.3) options.push({ c: curr.c, r: curr.r + 1 });
-      const next = options[Math.floor(Math.random() * options.length)];
-      addSafeEdge(curr.c, curr.r, next.c, next.r);
-      curr = next;
-    }
-    addSafeEdge(curr.c, curr.r, cheese.cellX, cheese.cellY);
-  }
-
-  // Populate doors on all internal walls
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const room = rooms[r][c];
-
-      // East door
-      if (c < COLS - 1) {
-        const isSafe = safeDoors.has(`${c},${r}->${c+1},${r}`);
-        const isWrong = !isSafe && Math.random() < 0.7; // 70% of non-safe doors are deadly wrong doors!
-        room.doors.E.exists = true;
-        room.doors.E.isWrong = isWrong;
-        rooms[r][c+1].doors.W.exists = true;
-        rooms[r][c+1].doors.W.isWrong = isWrong;
-      }
-
-      // South door
-      if (r < ROWS - 1) {
-        const isSafe = safeDoors.has(`${c},${r}->${c},${r+1}`);
-        const isWrong = !isSafe && Math.random() < 0.7;
-        room.doors.S.exists = true;
-        room.doors.S.isWrong = isWrong;
-        rooms[r+1][c].doors.N.exists = true;
-        rooms[r+1][c].doors.N.isWrong = isWrong;
-      }
-    }
-  }
-
-  updateHUD();
-}
-
-function generateFloorScuffs() {
-  const scuffs = [];
-  const n = 6 + Math.floor(Math.random() * 8);
-  for (let i = 0; i < n; i++) {
-    scuffs.push({
-      x: 18 + Math.random() * (CELL_W - 36),
-      y: 18 + Math.random() * (CELL_H - 36),
-      len: 8 + Math.random() * 18,
-      angle: Math.random() * Math.PI * 2,
-      color: Math.random() > 0.4 ? 'rgba(40, 35, 30, 0.28)' : 'rgba(15, 15, 15, 0.22)',
-      width: 1.2 + Math.random() * 1.5
-    });
-  }
-  return scuffs;
-}
-
-function updateHUD() {
-  const curC = Math.floor((player.x - GRID_X) / CELL_W);
-  const curR = Math.floor((player.y - GRID_Y) / CELL_H);
-  const dist = Math.abs(curC - cheese.cellX) + Math.abs(curR - cheese.cellY);
-  const radarEl = document.getElementById('radar-badge');
-  if (radarEl) {
-    if (dist === 0) {
-      radarEl.innerText = `🧀 CHEESE: IN THIS ROOM!`;
-      radarEl.style.color = '#fef08a';
-      radarEl.style.borderColor = '#facc15';
-    } else {
-      radarEl.innerText = `🧀 CHEESE: ${dist} ROOM${dist > 1 ? 'S' : ''} AWAY`;
-      radarEl.style.color = '#facc15';
-      radarEl.style.borderColor = 'rgba(202, 138, 4, 0.5)';
-    }
-  }
-
-  const bBlue = document.getElementById('badge-blue');
-  const bOrange = document.getElementById('badge-orange');
-  if (bBlue) {
-    bBlue.style.opacity = player.bluePortal ? '1' : '0.6';
-    bBlue.innerText = player.bluePortal ? '● BLUE [ACTIVE]' : '○ BLUE [Q/LMB]';
-  }
-  if (bOrange) {
-    bOrange.style.opacity = player.orangePortal ? '1' : '0.6';
-    bOrange.innerText = player.orangePortal ? '● ORANGE [ACTIVE]' : '○ ORANGE [E/RMB]';
-  }
-}
-
-/* ==========================================================================
-   INPUTS & PORTAL FIRING
-   ========================================================================== */
-const keys = {};
-let mousePos = { x: 0, y: 0 };
-
-window.addEventListener('keydown', (e) => {
-  keys[e.key.toLowerCase()] = true;
-  audio.ensureInit();
-
-  if (e.key.toLowerCase() === 'r') restartMaze();
-  if (e.key.toLowerCase() === 'q' || e.key === '1') firePortal('blue');
-  if (e.key.toLowerCase() === 'e' || e.key === '2') firePortal('orange');
-});
-
-window.addEventListener('keyup', (e) => {
-  keys[e.key.toLowerCase()] = false;
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  mousePos.x = (e.clientX - rect.left) * scaleX;
-  mousePos.y = (e.clientY - rect.top) * scaleY;
-});
-
-canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-canvas.addEventListener('mousedown', (e) => {
-  audio.ensureInit();
-  if (gameState === 'GAMEOVER' || gameState === 'VICTORY') {
-    restartMaze();
-    return;
-  }
-  if (gameState !== 'PLAYING') return;
-
-  if (e.button === 0) firePortal('blue');
-  else if (e.button === 2) firePortal('orange');
-});
-
-function firePortal(color) {
-  if (gameState !== 'PLAYING') return;
-  audio.portalFire(color);
-
-  const dx = mousePos.x - player.x;
-  const dy = mousePos.y - player.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const speed = 15;
-
-  bullets.push({
-    x: player.x,
-    y: player.y,
-    vx: (dx / len) * speed,
-    vy: (dy / len) * speed,
-    color: color,
-    life: 90
-  });
-
-  // Muzzle particles
-  for (let i = 0; i < 7; i++) {
-    particles.push({
-      x: player.x,
-      y: player.y,
-      vx: (dx / len) * 3 + (Math.random() - 0.5) * 4,
-      vy: (dy / len) * 3 + (Math.random() - 0.5) * 4,
-      color: color === 'blue' ? '#38bdf8' : '#fb923c',
-      size: 4 + Math.random() * 3,
-      alpha: 1,
-      decay: 0.08
-    });
-  }
-}
-
-function attachPortalToWall(bx, by, color) {
-  const relX = bx - GRID_X;
-  const relY = by - GRID_Y;
-  const col = Math.floor(relX / CELL_W);
-  const row = Math.floor(relY / CELL_H);
-
-  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
-
-  const roomX = GRID_X + col * CELL_W;
-  const roomY = GRID_Y + row * CELL_H;
-  const lx = bx - roomX;
-  const ly = by - roomY;
-
-  const distN = ly;
-  const distS = CELL_H - ly;
-  const distW = lx;
-  const distE = CELL_W - lx;
-  const minDist = Math.min(distN, distS, distW, distE);
-
-  let wall = 'N';
-  let px = bx, py = roomY + WALL_THICK, nx = 0, ny = 1;
-
-  if (minDist === distS) {
-    wall = 'S';
-    px = bx;
-    py = roomY + CELL_H - WALL_THICK;
-    nx = 0; ny = -1;
-  } else if (minDist === distW) {
-    wall = 'W';
-    px = roomX + WALL_THICK;
-    py = by;
-    nx = 1; ny = 0;
-  } else if (minDist === distE) {
-    wall = 'E';
-    px = roomX + CELL_W - WALL_THICK;
-    py = by;
-    nx = -1; ny = 0;
-  }
-
-  const portalObj = {
-    cellX: col,
-    cellY: row,
-    wall: wall,
-    x: px,
-    y: py,
-    nx: nx,
-    ny: ny,
-    color: color,
-    pulse: 0
-  };
-
-  if (color === 'blue') player.bluePortal = portalObj;
-  else player.orangePortal = portalObj;
-
-  updateHUD();
-
-  // Portal placement spark burst
-  for (let i = 0; i < 18; i++) {
-    particles.push({
-      x: px,
-      y: py,
-      vx: nx * 3.5 + (Math.random() - 0.5) * 6,
-      vy: ny * 3.5 + (Math.random() - 0.5) * 6,
-      color: color === 'blue' ? '#38bdf8' : '#fb923c',
-      size: 5 + Math.random() * 4,
-      alpha: 1,
-      decay: 0.05
-    });
-  }
-}
-
-/* ==========================================================================
-   GAME UPDATE & WRONG DOOR TRIGGER
-   ========================================================================== */
-function triggerCatJumpscare(door, col, row, dir) {
-  gameState = 'CAT_ATTACK';
-  attackTimer = 0;
-  deathDoorInfo = { door, col, row, dir };
-  audio.catJumpScare();
-
-  const rx = GRID_X + col * CELL_W;
-  const ry = GRID_Y + row * CELL_H;
-  let spawnX = rx + CELL_W / 2;
-  let spawnY = ry + CELL_H / 2;
-
-  if (dir === 'N') spawnY = ry;
-  else if (dir === 'S') spawnY = ry + CELL_H;
-  else if (dir === 'W') spawnX = rx;
-  else if (dir === 'E') spawnX = rx + CELL_W;
-
-  catAttack.startX = spawnX;
-  catAttack.startY = spawnY;
-  catAttack.x = spawnX;
-  catAttack.y = spawnY;
-  catAttack.scale = 0.25;
-  catAttack.mouthStage = 0;
-  catAttack.pawY = 0;
-
-  screenShake = 16;
-}
-
-function updateGame(dt) {
-  // Shake decay
-  if (screenShake > 0) {
-    screenShake = Math.max(0, screenShake - dt * 26);
-  }
-
-  // Particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.alpha -= p.decay;
-    if (p.alpha <= 0) particles.splice(i, 1);
-  }
-
-  // --- CAT ATTACK CINEMATIC SEQUENCE ---
-  if (gameState === 'CAT_ATTACK') {
-    attackTimer += dt;
-    screenShake = Math.min(22, screenShake + 1.5);
-
-    // 0.0s - 0.25s: Door shatters open
-    if (attackTimer < 0.25) {
-      if (deathDoorInfo && deathDoorInfo.door) {
-        deathDoorInfo.door.isOpen = true;
-        deathDoorInfo.door.openAngle = Math.min(1.5, deathDoorInfo.door.openAngle + dt * 8);
-      }
-      catAttack.x = catAttack.startX;
-      catAttack.y = catAttack.startY;
-      catAttack.scale = 0.3 + attackTimer * 1.8;
-    }
-    // 0.25s - 0.75s: 2D Pixelated Cat lunges from door directly at the rat!
-    else if (attackTimer < 0.75) {
-      const progress = (attackTimer - 0.25) / 0.5;
-      const ease = progress * progress; // violent acceleration
-      catAttack.x = catAttack.startX + (player.x - catAttack.startX) * ease;
-      catAttack.y = catAttack.startY + (player.y - catAttack.startY) * ease;
-      catAttack.scale = 0.8 + ease * 1.9;
-      catAttack.mouthStage = progress > 0.45 ? 1 : 0;
-      catAttack.pawY = ease;
-    }
-    // 0.75s - 1.35s: CHOMP! Jaws snap shut, swallowing the rat!
-    else if (attackTimer < 1.35) {
-      catAttack.x = player.x;
-      catAttack.y = player.y;
-      catAttack.mouthStage = 2; // Full chomp
-      catAttack.scale = 2.7;
-
-      // Blood / pixel spark splatters
-      if (Math.random() < 0.6) {
-        particles.push({
-          x: player.x + (Math.random() - 0.5) * 50,
-          y: player.y + (Math.random() - 0.5) * 50,
-          vx: (Math.random() - 0.5) * 10,
-          vy: (Math.random() - 0.5) * 10,
-          color: Math.random() > 0.3 ? '#ff0033' : '#ffee00',
-          size: 6 + Math.random() * 6,
-          alpha: 1,
-          decay: 0.035
+      } else if (withMenu) {
+        text('What will\nRAT do?', 28, 344, 14, NAVY, 28);
+        MENU.forEach((m, i) => {
+          const p = MENU_POS(i); text(m, p.x, p.y, 14, NAVY);
+          if (i === menuSel) { ctx.fillStyle = NAVY; ctx.beginPath(); ctx.moveTo(p.x - 18, p.y); ctx.lineTo(p.x - 18, p.y + 14); ctx.lineTo(p.x - 6, p.y + 7); ctx.fill(); }
         });
       }
+      break;
     }
-    // 1.35s+: Trigger Game Over Screen
-    else {
-      gameState = 'GAMEOVER';
-    }
-    return;
-  }
-
-  if (gameState !== 'PLAYING') return;
-
-  if (player.teleportCooldown > 0) {
-    player.teleportCooldown -= dt;
-  }
-
-  // Update Portal Bullets
-  for (let i = bullets.length - 1; i >= 0; i--) {
-    const b = bullets[i];
-    b.x += b.vx;
-    b.y += b.vy;
-    b.life--;
-
-    particles.push({
-      x: b.x,
-      y: b.y,
-      vx: (Math.random() - 0.5) * 1.5,
-      vy: (Math.random() - 0.5) * 1.5,
-      color: b.color === 'blue' ? '#38bdf8' : '#fb923c',
-      size: 3,
-      alpha: 0.7,
-      decay: 0.08
-    });
-
-    let collided = false;
-    // Outer boundary collision
-    if (b.x <= GRID_X + WALL_THICK || b.x >= GRID_X + GRID_W - WALL_THICK ||
-        b.y <= GRID_Y + WALL_THICK || b.y >= GRID_Y + GRID_H - WALL_THICK) {
-      collided = true;
-    }
-
-    // Grid cell wall collision
-    const c = Math.floor((b.x - GRID_X) / CELL_W);
-    const r = Math.floor((b.y - GRID_Y) / CELL_H);
-    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) {
-      const rx = GRID_X + c * CELL_W;
-      const ry = GRID_Y + r * CELL_H;
-      const lx = b.x - rx;
-      const ly = b.y - ry;
-      if (lx < WALL_THICK || lx > CELL_W - WALL_THICK || ly < WALL_THICK || ly > CELL_H - WALL_THICK) {
-        collided = true;
+    case 'portal': {
+      const px = RAT.x + 108, py = 298;
+      // 0-450 charge, 450-1000 open, 1000-1900 sink (gun drops), 1900-2300 close, 2300-2800 flash
+      const open = t < 450 ? 0 : t < 1900 ? ease((t - 450) / 550) : 1 - ease((t - 1900) / 400);
+      const sink = clamp01((t - 1000) / 900), dropped = t >= 1000;
+      scene({boxes: true, noGun: dropped, ratDy: ease(sink) * 150, ratClip: py + 2, bob: true});
+      drawTextBox(null, false);
+      if (dropped) text('Oh no! The PORTAL GUN\nslipped out of the bag!', 28, 344, 14, NAVY, 28);
+      else text('RAT used PORTAL!', 28, 344, 14, NAVY, 28);
+      if (t < 30) tone(300, .9, 'sine', .06, 1500);
+      if (t < 450) { // muzzle charge
+        const k = t / 450, mx = RAT.x + 36 * RAT.u, my = RAT.y + 16.5 * RAT.u;
+        ctx.strokeStyle = '#ff8a1f'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(mx, my, 4 + k * 16, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = CREAM; ctx.fillRect(mx - 3, my - 3, 6, 6);
       }
-    }
-
-    if (collided || b.life <= 0) {
-      attachPortalToWall(b.x, b.y, b.color);
-      bullets.splice(i, 1);
-    }
-  }
-
-  // Rat Movement
-  let mx = 0, my = 0;
-  if (keys['w'] || keys['arrowup']) my -= 1;
-  if (keys['s'] || keys['arrowdown']) my += 1;
-  if (keys['a'] || keys['arrowleft']) mx -= 1;
-  if (keys['d'] || keys['arrowright']) mx += 1;
-
-  if (mx !== 0 || my !== 0) {
-    const len = Math.hypot(mx, my);
-    mx = (mx / len) * player.speed;
-    my = (my / len) * player.speed;
-    player.moving = true;
-    player.walkCycle += dt * 11;
-    if (Math.floor(player.walkCycle) % 3 === 0 && Math.random() < 0.25) {
-      audio.footstep();
-    }
-  } else {
-    player.moving = false;
-  }
-
-  processRatMovement(mx, my);
-
-  // Check Cheese Grab
-  const dCheese = Math.hypot(player.x - cheese.x, player.y - cheese.y);
-  if (!cheese.collected && dCheese < player.radius + 18) {
-    cheese.collected = true;
-    gameState = 'VICTORY';
-    audio.victoryFanfare();
-    for (let i = 0; i < 90; i++) {
-      particles.push({
-        x: cheese.x,
-        y: cheese.y,
-        vx: (Math.random() - 0.5) * 14,
-        vy: (Math.random() - 0.5) * 14,
-        color: ['#ffd700', '#38bdf8', '#fb923c', '#4ade80', '#ffffff'][Math.floor(Math.random() * 5)],
-        size: 5 + Math.random() * 5,
-        alpha: 1,
-        decay: 0.015
-      });
-    }
-  }
-
-  // Portal Teleportation
-  if (player.teleportCooldown <= 0 && player.bluePortal && player.orangePortal) {
-    const dBlue = Math.hypot(player.x - player.bluePortal.x, player.y - player.bluePortal.y);
-    const dOrange = Math.hypot(player.x - player.orangePortal.x, player.y - player.orangePortal.y);
-
-    if (dBlue < 22) {
-      player.x = player.orangePortal.x + player.orangePortal.nx * 28;
-      player.y = player.orangePortal.y + player.orangePortal.ny * 28;
-      player.teleportCooldown = 0.6;
-      audio.portalTeleport();
-      spawnPortalTeleportSparks(player.x, player.y, '#fb923c');
-      updateHUD();
-    } else if (dOrange < 22) {
-      player.x = player.bluePortal.x + player.bluePortal.nx * 28;
-      player.y = player.bluePortal.y + player.bluePortal.ny * 28;
-      player.teleportCooldown = 0.6;
-      audio.portalTeleport();
-      spawnPortalTeleportSparks(player.x, player.y, '#38bdf8');
-      updateHUD();
-    }
-  }
-}
-
-function spawnPortalTeleportSparks(x, y, color) {
-  for (let i = 0; i < 22; i++) {
-    particles.push({
-      x: x,
-      y: y,
-      vx: (Math.random() - 0.5) * 8,
-      vy: (Math.random() - 0.5) * 8,
-      color: color,
-      size: 4 + Math.random() * 4,
-      alpha: 1,
-      decay: 0.045
-    });
-  }
-}
-
-function processRatMovement(dx, dy) {
-  const nextX = player.x + dx;
-  const nextY = player.y + dy;
-
-  const minX = GRID_X + WALL_THICK + player.radius;
-  const maxX = GRID_X + GRID_W - WALL_THICK - player.radius;
-  const minY = GRID_Y + WALL_THICK + player.radius;
-  const maxY = GRID_Y + GRID_H - WALL_THICK - player.radius;
-
-  const c = Math.floor((player.x - GRID_X) / CELL_W);
-  const r = Math.floor((player.y - GRID_Y) / CELL_H);
-
-  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) {
-    player.x = Math.max(minX, Math.min(maxX, nextX));
-    player.y = Math.max(minY, Math.min(maxY, nextY));
-    return;
-  }
-
-  const room = rooms[r][c];
-  const roomL = GRID_X + c * CELL_W;
-  const roomR = roomL + CELL_W;
-  const roomT = GRID_Y + r * CELL_H;
-  const roomB = roomT + CELL_H;
-
-  let canMoveX = true;
-  let canMoveY = true;
-
-  // Collision & Door Check: East / West
-  if (nextX > roomR - WALL_THICK - player.radius) {
-    if (room.doors.E.exists) {
-      const centerY = roomT + CELL_H / 2;
-      if (Math.abs(player.y - centerY) < (DOOR_W / 2)) {
-        tryOpenDoor(room.doors.E, c, r, 'E');
-        if (!room.doors.E.isOpen && !room.doors.E.isWrong) canMoveX = false;
-      } else canMoveX = false;
-    } else canMoveX = false;
-  } else if (nextX < roomL + WALL_THICK + player.radius) {
-    if (room.doors.W.exists) {
-      const centerY = roomT + CELL_H / 2;
-      if (Math.abs(player.y - centerY) < (DOOR_W / 2)) {
-        tryOpenDoor(room.doors.W, c, r, 'W');
-        if (!room.doors.W.isOpen && !room.doors.W.isWrong) canMoveX = false;
-      } else canMoveX = false;
-    } else canMoveX = false;
-  }
-
-  // Collision & Door Check: North / South
-  if (nextY < roomT + WALL_THICK + player.radius) {
-    if (room.doors.N.exists) {
-      const centerX = roomL + CELL_W / 2;
-      if (Math.abs(player.x - centerX) < (DOOR_W / 2)) {
-        tryOpenDoor(room.doors.N, c, r, 'N');
-        if (!room.doors.N.isOpen && !room.doors.N.isWrong) canMoveY = false;
-      } else canMoveY = false;
-    } else canMoveY = false;
-  } else if (nextY > roomB - WALL_THICK - player.radius) {
-    if (room.doors.S.exists) {
-      const centerX = roomL + CELL_W / 2;
-      if (Math.abs(player.x - centerX) < (DOOR_W / 2)) {
-        tryOpenDoor(room.doors.S, c, r, 'S');
-        if (!room.doors.S.isOpen && !room.doors.S.isWrong) canMoveY = false;
-      } else canMoveY = false;
-    } else canMoveY = false;
-  }
-
-  if (canMoveX) player.x = Math.max(minX, Math.min(maxX, nextX));
-  if (canMoveY) player.y = Math.max(minY, Math.min(maxY, nextY));
-
-  updateHUD();
-}
-
-function tryOpenDoor(door, c, r, dir) {
-  if (door.isOpen) return;
-
-  if (door.isWrong) {
-    // WRONG DOOR TRIGGER! 2D Pixelated Cat pops out!
-    triggerCatJumpscare(door, c, r, dir);
-  } else {
-    // Safe door: Opens on hinges
-    door.isOpen = true;
-    door.openAngle = 1.35;
-    audio.doorOpen();
-
-    // Mirror door state
-    if (dir === 'E' && c < COLS - 1) rooms[r][c + 1].doors.W.isOpen = true;
-    if (dir === 'W' && c > 0) rooms[r][c - 1].doors.E.isOpen = true;
-    if (dir === 'S' && r < ROWS - 1) rooms[r + 1][c].doors.N.isOpen = true;
-    if (dir === 'N' && r > 0) rooms[r - 1][c].doors.S.isOpen = true;
-
-    // Wood dust puffs
-    for (let i = 0; i < 9; i++) {
-      particles.push({
-        x: player.x + (Math.random() - 0.5) * 20,
-        y: player.y + (Math.random() - 0.5) * 20,
-        vx: (Math.random() - 0.5) * 3,
-        vy: (Math.random() - 0.5) * 3,
-        color: '#edd892',
-        size: 3,
-        alpha: 0.8,
-        decay: 0.04
-      });
-    }
-  }
-}
-
-/* ==========================================================================
-   RENDER PIPELINE
-   ========================================================================= */
-function render() {
-  ctx.save();
-
-  if (screenShake > 0) {
-    const rx = (Math.random() - 0.5) * screenShake;
-    const ry = (Math.random() - 0.5) * screenShake;
-    ctx.translate(rx, ry);
-  }
-
-  // Dark studio backdrop
-  ctx.fillStyle = '#0f141d';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // 1. Concrete floor chambers & doors
-  renderRoomsAndDoors();
-
-  // 2. Active Portals
-  renderPortals();
-
-  // 3. Golden Cheese
-  renderCheese();
-
-  // 4. Portal Bullets
-  renderBullets();
-
-  // 5. Rat with Portal Gun
-  if (gameState !== 'CAT_ATTACK' || attackTimer < 0.85) {
-    renderRat();
-  }
-
-  // 6. Particles
-  renderParticles();
-
-  // 7. Overhead Wooden Grid Beams (Japanese Game Show Set structure)
-  renderWoodenBeams();
-
-  // 8. 2D Pixelated Cat Attack (Jump-scare sequence)
-  if (gameState === 'CAT_ATTACK') {
-    renderPixelatedCat();
-  }
-
-  // 9. Retro Game Over Screen
-  if (gameState === 'GAMEOVER') {
-    renderGameOver();
-  }
-
-  // 10. Victory Screen
-  if (gameState === 'VICTORY') {
-    renderVictory();
-  }
-
-  ctx.restore();
-}
-
-function renderRoomsAndDoors() {
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const room = rooms[r][c];
-      const rx = GRID_X + c * CELL_W;
-      const ry = GRID_Y + r * CELL_H;
-
-      // Realistic Takeshi's Castle scuffed concrete floor
-      const grad = ctx.createLinearGradient(rx, ry, rx + CELL_W, ry + CELL_H);
-      grad.addColorStop(0, '#9eaba2');
-      grad.addColorStop(0.5, '#b0bcb4');
-      grad.addColorStop(1, '#94a198');
-      ctx.fillStyle = grad;
-      ctx.fillRect(rx, ry, CELL_W, CELL_H);
-
-      // Floor panel joints
-      ctx.strokeStyle = 'rgba(60, 70, 65, 0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(rx + CELL_W / 2, ry);
-      ctx.lineTo(rx + CELL_W / 2, ry + CELL_H);
-      ctx.moveTo(rx, ry + CELL_H / 2);
-      ctx.lineTo(rx + CELL_W, ry + CELL_H / 2);
-      ctx.stroke();
-
-      // Scuff marks / fallen debris
-      for (const scuff of room.scuffs) {
-        ctx.save();
-        ctx.translate(rx + scuff.x, ry + scuff.y);
-        ctx.rotate(scuff.angle);
-        ctx.strokeStyle = scuff.color;
-        ctx.lineWidth = scuff.width;
-        ctx.beginPath();
-        ctx.moveTo(-scuff.len / 2, 0);
-        ctx.lineTo(scuff.len / 2, 0);
-        ctx.stroke();
+      if (open > 0.01) {
+        ellipse(px, py, 100 * open, 20 * open, INK);
+        ellipse(px, py, 92 * open, 15 * open, '#1f5fd6');
+        ctx.save(); ctx.strokeStyle = '#8be9ff'; ctx.lineWidth = 3; ctx.setLineDash([14, 10]); ctx.lineDashOffset = -t / 12;
+        ctx.beginPath(); ctx.ellipse(px, py, 80 * open, 11 * open, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = CREAM; ctx.lineDashOffset = t / 16; ctx.beginPath(); ctx.ellipse(px, py, 55 * open, 7 * open, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.restore();
       }
-
-      // Room Walls (inner white/cream drywall)
-      ctx.fillStyle = '#dde2dc';
-      ctx.fillRect(rx, ry, CELL_W, WALL_THICK);
-      ctx.fillRect(rx, ry + CELL_H - WALL_THICK, CELL_W, WALL_THICK);
-      ctx.fillRect(rx, ry, WALL_THICK, CELL_H);
-      ctx.fillRect(rx + CELL_W - WALL_THICK, ry, WALL_THICK, CELL_H);
-
-      // Inner wall drop shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
-      ctx.fillRect(rx + WALL_THICK, ry + WALL_THICK, CELL_W - WALL_THICK * 2, 9);
-      ctx.fillRect(rx + WALL_THICK, ry + WALL_THICK, 9, CELL_H - WALL_THICK * 2);
-
-      // Draw Doors with iconic 'X' diagonal braces!
-      renderDoors(room, rx, ry);
+      if (dropped) { // the gun pops out, falls and stays behind on the platform
+        const gt = (t - 1000) / 700, gx = RAT.x + 25 * RAT.u + gt * 0, gy0 = RAT.y + 13 * RAT.u;
+        const fall = Math.min(1, gt), bounce = gt > 1 ? Math.abs(Math.sin((gt - 1) * 5)) * 10 * Math.max(0, 1 - (gt - 1) * 1.2) : 0;
+        const gy = gy0 - Math.sin(Math.min(1, gt * 2) * Math.PI) * 18 + fall * fall * (284 - gy0 - 48) - bounce;
+        drawSprite('gun', 'color', gx + 30 * Math.min(1, gt), gy, RAT.u);
+        if (!window.__gunclink && gt >= 1) { window.__gunclink = 1; tone(900, .05, 'square', .05); setTimeout(() => tone(600, .08, 'square', .04), 70); }
+      } else window.__gunclink = 0;
+      if (t > 2300) {
+        const f = clamp01((t - 2300) / 400);
+        ctx.fillStyle = 'rgba(255,255,255,' + f + ')'; ctx.fillRect(0, 0, W, H);
+      }
+      if (t > 2750) { setState('end'); tone(880, .2, 'square', .05); setTimeout(() => tone(1175, .25, 'square', .05), 120); }
+      break;
     }
+    case 'end': if (!ended) { ended = true; if (window.__startGame) window.__startGame(); } break;
   }
+  requestAnimationFrame(frame);
 }
+function next1() { say(MSGS[1], next2); }
+function next2() { say(MSGS[2], () => setState('menu')); }
 
-function renderDoors(room, rx, ry) {
-  function drawDoor(x, y, w, h, isVertical, isOpen, angle) {
-    ctx.save();
-    ctx.translate(x + w / 2, y + h / 2);
-    if (isOpen) ctx.rotate(angle || 1.3);
-
-    // Cream / Yellow door surface
-    ctx.fillStyle = '#f3dfa2';
-    ctx.fillRect(-w / 2, -h / 2, w, h);
-    ctx.strokeStyle = '#8d6820';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(-w / 2, -h / 2, w, h);
-
-    // Inner panel
-    ctx.fillStyle = '#faecc6';
-    ctx.fillRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4);
-
-    // The iconic Takeshi's Castle 'X' diagonal cross braces!
-    ctx.strokeStyle = '#a27824';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(-w / 2 + 2, -h / 2 + 2);
-    ctx.lineTo(w / 2 - 2, h / 2 - 2);
-    ctx.moveTo(w / 2 - 2, -h / 2 + 2);
-    ctx.lineTo(-w / 2 + 2, h / 2 - 2);
-    ctx.stroke();
-
-    // Hinge indicator
-    ctx.fillStyle = '#3e2723';
-    ctx.fillRect(-w / 2, -h / 2, 3, 3);
-
-    ctx.restore();
-  }
-
-  // North Door
-  if (room.doors.N.exists) {
-    drawDoor(rx + CELL_W / 2 - DOOR_W / 2, ry, DOOR_W, DOOR_H, false, room.doors.N.isOpen, room.doors.N.openAngle);
-  }
-  // South Door
-  if (room.doors.S.exists) {
-    drawDoor(rx + CELL_W / 2 - DOOR_W / 2, ry + CELL_H - DOOR_H, DOOR_W, DOOR_H, false, room.doors.S.isOpen, -room.doors.S.openAngle);
-  }
-  // West Door
-  if (room.doors.W.exists) {
-    drawDoor(rx, ry + CELL_H / 2 - DOOR_W / 2, DOOR_H, DOOR_W, true, room.doors.W.isOpen, room.doors.W.openAngle);
-  }
-  // East Door
-  if (room.doors.E.exists) {
-    drawDoor(rx + CELL_W - DOOR_H, ry + CELL_H / 2 - DOOR_W / 2, DOOR_H, DOOR_W, true, room.doors.E.isOpen, -room.doors.E.openAngle);
-  }
+// ---- input ----
+function canvasPos(e) {
+  const r = cv.getBoundingClientRect();
+  return {x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height};
 }
-
-function renderWoodenBeams() {
-  ctx.save();
-  const bw = BEAM_W;
-
-  // Drop shadows cast by top beams
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
-  for (let c = 0; c <= COLS; c++) {
-    const bx = GRID_X + c * CELL_W - bw / 2;
-    ctx.fillRect(bx + 5, GRID_Y, 8, GRID_H);
+function menuHit(p) {
+  for (let i = 0; i < MENU.length; i++) { const m = MENU_POS(i); if (p.x >= m.x - 22 && p.x <= m.x + 100 && p.y >= m.y - 10 && p.y <= m.y + 24) return i; }
+  return -1;
+}
+cv.addEventListener('mousemove', e => { if (state !== 'menu') return; const i = menuHit(canvasPos(e)); if (i >= 0 && i !== menuSel) { menuSel = i; tone(440, .04); } });
+cv.addEventListener('click', e => {
+  if (!window.__introOn) return;
+  audio();
+  if (state === 'menu') { const i = menuHit(canvasPos(e)); if (i >= 0) { menuSel = i; chooseMenu(); } return; }
+  confirm();
+});
+window.addEventListener('keydown', e => {
+  if (!window.__introOn || state === 'end') return;
+  const k = e.key;
+  if (k === 'Enter' || k === ' ' || k.toLowerCase() === 'z') { e.preventDefault(); confirm(); }
+  else if (k === 'Escape') skipIntro();
+  else if (k.toLowerCase() === 'm') toggleMute();
+  else if (k.toLowerCase() === 'r' && state === 'end') startIntro();
+  else if (state === 'menu') {
+    let s = menuSel;
+    if (k === 'ArrowLeft' && s % 2 === 1) s--; else if (k === 'ArrowRight' && s % 2 === 0) s++;
+    else if (k === 'ArrowUp' && s >= 2) s -= 2; else if (k === 'ArrowDown' && s < 2) s += 2;
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(k)) { e.preventDefault(); if (s !== menuSel) { menuSel = s; tone(440, .04); } }
   }
-  for (let r = 0; r <= ROWS; r++) {
-    const by = GRID_Y + r * CELL_H - bw / 2;
-    ctx.fillRect(GRID_X, by + 5, GRID_W, 8);
-  }
+});
+function toggleMute() { muted = !muted; document.getElementById('bMute').textContent = 'SOUND: ' + (muted ? 'OFF' : 'ON'); }
+document.getElementById('bSkip').onclick = () => { audio(); skipIntro(); };
+document.getElementById('bReplay').onclick = () => { audio(); startIntro(); };
+document.getElementById('bMute').onclick = toggleMute;
 
-  // Vertical wooden beams
-  for (let c = 0; c <= COLS; c++) {
-    const bx = GRID_X + c * CELL_W - bw / 2;
-    ctx.fillStyle = '#e5b066';
-    ctx.fillRect(bx, GRID_Y - 4, bw, GRID_H + 8);
-    // Bevel highlights
-    ctx.fillStyle = '#fed7aa';
-    ctx.fillRect(bx, GRID_Y - 4, 3, GRID_H + 8);
-    ctx.fillStyle = '#a16207';
-    ctx.fillRect(bx + bw - 3, GRID_Y - 4, 3, GRID_H + 8);
-  }
+// start once the pixel font is ready (or after a short timeout)
+let started = false;
+function go() { if (started) return; started = true; setState('title'); requestAnimationFrame(frame); }
+if (document.fonts && document.fonts.load) {
+  Promise.race([document.fonts.load('14px "Press Start 2P"'), new Promise(r => setTimeout(r, 700))]).then(go, go);
+} else go();
+window.__sprite = sprite;
+window.__rat = {get state() { return state; }, setState, skipIntro, startIntro};
+})();
+</script>
+<script>
+window.__captchaPassed = function () {
+  document.getElementById('captchaView').style.display = 'none';
+  document.getElementById('introView').style.display = 'flex';
+  document.body.className = '';
+  window.__introOn = true;
+};
+AudioSynthesizer.prototype.enemyAlert = function (type) {
+  if (this.muted) return; this.ensureInit(); const t = this.ctx.currentTime, o = this.ctx.createOscillator(), g = this.ctx.createGain();
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(type === 'cat' ? 220 : 520, t); o.frequency.exponentialRampToValueAtTime(type === 'cat' ? 520 : 240, t + .25);
+  g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .3); o.connect(g); g.connect(this.ctx.destination); o.start(t); o.stop(t + .3);
+};
+</script>
+<script>
+(() => {
 
-  // Horizontal wooden beams
-  for (let r = 0; r <= ROWS; r++) {
-    const by = GRID_Y + r * CELL_H - bw / 2;
-    ctx.fillStyle = '#e5b066';
-    ctx.fillRect(GRID_X - 4, by, GRID_W + 8, bw);
-    // Bevel highlights
-    ctx.fillStyle = '#fed7aa';
-    ctx.fillRect(GRID_X - 4, by, GRID_W + 8, 3);
-    ctx.fillStyle = '#a16207';
-    ctx.fillRect(GRID_X - 4, by + bw - 3, GRID_W + 8, 3);
-  }
+    /* =====================================================================
+       0. INTEGRATION CALLBACK (CONNECT YOUR GAME HERE)
+       ===================================================================== */
+    function onVerificationSuccess() {
+      // Hide the verification gateway
+      document.getElementById('captcha-container').classList.add('hidden');
 
-  // Joint plates & bolts
-  for (let r = 0; r <= ROWS; r++) {
-    for (let c = 0; c <= COLS; c++) {
-      const jx = GRID_X + c * CELL_W - bw / 2;
-      const jy = GRID_Y + r * CELL_H - bw / 2;
-      ctx.fillStyle = '#fde68a';
-      ctx.fillRect(jx - 2, jy - 2, bw + 4, bw + 4);
-      ctx.strokeStyle = '#b45309';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(jx - 2, jy - 2, bw + 4, bw + 4);
-      // Screw
-      ctx.fillStyle = '#78350f';
-      ctx.fillRect(jx + bw / 2 - 2, jy + bw / 2 - 2, 4, 4);
+      // --- PLACE YOUR GAME LAUNCH LOGIC BELOW ---
+      window.__captchaPassed();
     }
-  }
 
-  ctx.restore();
-}
-
-function renderPortals() {
-  [player.bluePortal, player.orangePortal].forEach((p) => {
-    if (!p) return;
-    p.pulse = (p.pulse || 0) + 0.08;
-    const isBlue = p.color === 'blue';
-    const mainCol = isBlue ? '#00b4d8' : '#fb8500';
-    const coreCol = isBlue ? '#caf0f8' : '#ffedd5';
-    const glowCol = isBlue ? 'rgba(0, 180, 216, 0.55)' : 'rgba(251, 133, 0, 0.55)';
-
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    const isH = p.wall === 'N' || p.wall === 'S';
-    const pulse = 1 + Math.sin(p.pulse) * 0.12;
-
-    // Glowing halo
-    const halo = ctx.createRadialGradient(0, 0, 6, 0, 0, 26 * pulse);
-    halo.addColorStop(0, glowCol);
-    halo.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = halo;
-    ctx.beginPath();
-    ctx.arc(0, 0, 26 * pulse, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Portal Ring
-    ctx.fillStyle = '#0f172a';
-    ctx.strokeStyle = mainCol;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    if (isH) ctx.ellipse(0, 0, 23 * pulse, 8 * pulse, 0, 0, Math.PI * 2);
-    else ctx.ellipse(0, 0, 8 * pulse, 23 * pulse, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // Energy Core
-    ctx.fillStyle = coreCol;
-    ctx.beginPath();
-    if (isH) ctx.ellipse(0, 0, 14 * pulse, 4 * pulse, 0, 0, Math.PI * 2);
-    else ctx.ellipse(0, 0, 4 * pulse, 14 * pulse, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-  });
-}
-
-function renderBullets() {
-  for (const b of bullets) {
-    ctx.save();
-    ctx.fillStyle = b.color === 'blue' ? '#38bdf8' : '#fb923c';
-    ctx.shadowColor = b.color === 'blue' ? '#0284c7' : '#ea580c';
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-function renderCheese() {
-  if (cheese.collected) return;
-  cheese.glow = (cheese.glow || 0) + 0.05;
-  const float = Math.sin(cheese.glow) * 3;
-
-  ctx.save();
-  ctx.translate(cheese.x, cheese.y + float);
-
-  // Golden glow
-  const aura = ctx.createRadialGradient(0, 0, 5, 0, 0, 30);
-  aura.addColorStop(0, 'rgba(250, 204, 21, 0.85)');
-  aura.addColorStop(1, 'rgba(250, 204, 21, 0)');
-  ctx.fillStyle = aura;
-  ctx.beginPath();
-  ctx.arc(0, 0, 30, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cheese Wedge
-  ctx.fillStyle = '#f59e0b';
-  ctx.strokeStyle = '#b45309';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(-16, 12);
-  ctx.lineTo(16, 12);
-  ctx.lineTo(0, -18);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Cheese holes
-  ctx.fillStyle = '#d97706';
-  ctx.beginPath();
-  ctx.arc(-4, 5, 3, 0, Math.PI * 2);
-  ctx.arc(6, 6, 2.5, 0, Math.PI * 2);
-  ctx.arc(1, -4, 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-function renderRat() {
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  const aimAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-
-  // Drop Shadow
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
-  ctx.beginPath();
-  ctx.ellipse(0, player.radius - 2, player.radius + 3, player.radius / 2 + 1, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Animated Tail
-  const tailSway = Math.sin(player.walkCycle * 2) * 5;
-  ctx.strokeStyle = '#f472b6';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(-player.radius + 4, 3);
-  ctx.quadraticCurveTo(-player.radius - 9, 8 + tailSway, -player.radius - 18, 3 + tailSway);
-  ctx.stroke();
-
-  // Rat Body
-  ctx.fillStyle = '#64748b';
-  ctx.strokeStyle = '#334155';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, player.radius, player.radius - 2, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // Pink Ears
-  ctx.fillStyle = '#f472b6';
-  ctx.beginPath();
-  ctx.arc(-8, -12, 6, 0, Math.PI * 2);
-  ctx.arc(8, -12, 6, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // Rat Head
-  ctx.fillStyle = '#94a3b8';
-  ctx.beginPath();
-  ctx.arc(0, -5, 9, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // Pink Nose
-  ctx.fillStyle = '#fb7185';
-  ctx.beginPath();
-  ctx.arc(0, -9, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Beady Black Eyes
-  ctx.fillStyle = '#0f172a';
-  ctx.beginPath();
-  ctx.arc(-4, -6, 2, 0, Math.PI * 2);
-  ctx.arc(4, -6, 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Whiskers
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(-5, -6); ctx.lineTo(-14, -8);
-  ctx.moveTo(-5, -5); ctx.lineTo(-13, -3);
-  ctx.moveTo(5, -6); ctx.lineTo(14, -8);
-  ctx.moveTo(5, -5); ctx.lineTo(13, -3);
-  ctx.stroke();
-
-  // PORTAL GUN Device in hands (aimed at mouse)
-  ctx.save();
-  ctx.rotate(aimAngle);
-
-  // Gun Body (white shell)
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#1e293b';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(4, -4, 18, 8, 3);
-  ctx.fill();
-  ctx.stroke();
-
-  // Handle & Grip
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(2, -2, 4, 4);
-
-  // Glowing portal power core
-  ctx.fillStyle = '#38bdf8';
-  ctx.shadowColor = '#38bdf8';
-  ctx.shadowBlur = 8;
-  ctx.fillRect(8, -2.5, 6, 5);
-  ctx.shadowBlur = 0;
-
-  // Front Aperture Prongs
-  ctx.strokeStyle = '#64748b';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(22, -4); ctx.lineTo(26, -5);
-  ctx.moveTo(22, 4); ctx.lineTo(26, 5);
-  ctx.stroke();
-
-  ctx.restore();
-
-  ctx.restore();
-}
-
-function renderParticles() {
-  for (const p of particles) {
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, p.alpha);
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-    ctx.restore();
-  }
-}
-
-/* ==========================================================================
-   2D PIXELATED CAT JUMP-SCARE & EATING ANIMATION
-   ========================================================================== */
-function renderPixelatedCat() {
-  ctx.save();
-  const c = catAttack;
-
-  ctx.translate(c.x, c.y);
-  ctx.scale(c.scale, c.scale);
-
-  // Ominous blood-red shadow aura
-  const aura = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
-  aura.addColorStop(0, 'rgba(255, 0, 68, 0.85)');
-  aura.addColorStop(0.5, 'rgba(40, 0, 50, 0.9)');
-  aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = aura;
-  ctx.beginPath();
-  ctx.arc(0, 0, 110, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Render 2D Pixelated Cat Head from Matrix
-  const pxSize = 4.5;
-  const startPx = -(PIXEL_CAT_MATRIX[0].length * pxSize) / 2;
-  const startPy = -(PIXEL_CAT_MATRIX.length * pxSize) / 2;
-
-  for (let row = 0; row < PIXEL_CAT_MATRIX.length; row++) {
-    const line = PIXEL_CAT_MATRIX[row];
-    for (let col = 0; col < line.length; col++) {
-      const code = line[col];
-      if (code !== ' ' && CAT_PALETTE[code]) {
-        ctx.fillStyle = CAT_PALETTE[code];
-        ctx.fillRect(startPx + col * pxSize, startPy + row * pxSize, pxSize, pxSize);
+    /* =====================================================================
+       1. SAFE AUDIO SYNTHESIZER (Lazy-loaded to respect browser autoplay)
+       ===================================================================== */
+    let audioCtx = null;
+    function playBeep(freq = 440, type = "sine", duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        // Fallback for restricted audio environments
       }
     }
+
+    // Helper: Normalized canvas coordinates for Mouse & Touch
+    function getCanvasCoords(canvas, evt) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      let clientX, clientY;
+
+      if (evt.touches && evt.touches.length > 0) {
+        clientX = evt.touches[0].clientX;
+        clientY = evt.touches[0].clientY;
+      } else {
+        clientX = evt.clientX;
+        clientY = evt.clientY;
+      }
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    /* =====================================================================
+       2. ROUND 1: OPTICAL LASER LOCK (SELF-GENERATING & PRECISE)
+       ===================================================================== */
+    const canvas1 = document.getElementById('canvas1');
+    const ctx1 = canvas1.getContext('2d');
+    const angleSlider = document.getElementById('prismAngle');
+    const angleVal = document.getElementById('angleVal');
+    const msg1 = document.getElementById('msg1');
+
+    let p1Target, p1Emitter, p1Prism;
+    let p1LockCharge = 0;
+    let p1Passed = false;
+
+    function initPhase1() {
+      p1Passed = false;
+      p1LockCharge = 0;
+      p1Emitter = { x: 30, y: 140 };
+      p1Prism = { x: 250, y: 140 };
+
+      // Self-generating: Random target on the right half, avoiding the straight line
+      const randomY = Math.random() > 0.5 
+        ? 35 + Math.random() * 65     // Upper quadrant (35 to 100)
+        : 180 + Math.random() * 65;   // Lower quadrant (180 to 245)
+
+      p1Target = {
+        x: 410 + Math.random() * 110,
+        y: randomY,
+        r: 18
+      };
+
+      // Set initial angle far from the solution
+      angleSlider.value = (Math.random() > 0.5 ? -45 : 45).toFixed(1);
+      angleVal.innerText = `${angleSlider.value}°`;
+
+      drawPhase1();
+    }
+
+    function drawPhase1() {
+      ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
+
+      // Background Grid
+      ctx1.strokeStyle = "#121a28";
+      ctx1.lineWidth = 1;
+      for (let x = 0; x < canvas1.width; x += 28) {
+        ctx1.beginPath(); ctx1.moveTo(x, 0); ctx1.lineTo(x, canvas1.height); ctx1.stroke();
+      }
+      for (let y = 0; y < canvas1.height; y += 28) {
+        ctx1.beginPath(); ctx1.moveTo(0, y); ctx1.lineTo(canvas1.width, y); ctx1.stroke();
+      }
+
+      // Emitter
+      ctx1.fillStyle = "#00f3ff";
+      ctx1.fillRect(p1Emitter.x - 20, p1Emitter.y - 10, 20, 20);
+
+      // Prism Mirror representation
+      const deflDeg = parseFloat(angleSlider.value);
+      const deflRad = (deflDeg * Math.PI) / 180;
+      
+      // Mirror surface is perpendicular to bisector of incoming (0 rad) & outgoing (deflRad)
+      const mirrorAngle = (deflRad / 2) + Math.PI / 2;
+      const mirrorLen = 38;
+      const mx1 = p1Prism.x - Math.cos(mirrorAngle) * mirrorLen;
+      const my1 = p1Prism.y - Math.sin(mirrorAngle) * mirrorLen;
+      const mx2 = p1Prism.x + Math.cos(mirrorAngle) * mirrorLen;
+      const my2 = p1Prism.y + Math.sin(mirrorAngle) * mirrorLen;
+
+      // Draw Mirror
+      ctx1.strokeStyle = "#ffffff";
+      ctx1.lineWidth = 4;
+      ctx1.beginPath();
+      ctx1.moveTo(mx1, my1);
+      ctx1.lineTo(mx2, my2);
+      ctx1.stroke();
+
+      // Incoming Laser
+      ctx1.strokeStyle = "#00f3ff";
+      ctx1.lineWidth = 3;
+      ctx1.shadowColor = "#00f3ff";
+      ctx1.shadowBlur = 8;
+      ctx1.beginPath();
+      ctx1.moveTo(p1Emitter.x, p1Emitter.y);
+      ctx1.lineTo(p1Prism.x, p1Prism.y);
+      ctx1.stroke();
+
+      // Reflected Laser Ray
+      const beamDistance = 450;
+      const endX = p1Prism.x + Math.cos(deflRad) * beamDistance;
+      const endY = p1Prism.y + Math.sin(deflRad) * beamDistance;
+
+      ctx1.beginPath();
+      ctx1.moveTo(p1Prism.x, p1Prism.y);
+      ctx1.lineTo(endX, endY);
+      ctx1.stroke();
+      ctx1.shadowBlur = 0;
+
+      // Target Sensor Collision Check
+      const dist = pointToSegmentDist(p1Target.x, p1Target.y, p1Prism.x, p1Prism.y, endX, endY);
+      const isHitting = dist < p1Target.r;
+
+      if (isHitting) {
+        p1LockCharge = Math.min(100, p1LockCharge + 10);
+      } else {
+        p1LockCharge = Math.max(0, p1LockCharge - 6);
+      }
+
+      // Draw Target Node
+      const isLocked = p1LockCharge >= 100;
+      ctx1.fillStyle = isLocked ? "#00ff66" : (isHitting ? "#ffcc00" : "#ff0055");
+      ctx1.beginPath();
+      ctx1.arc(p1Target.x, p1Target.y, p1Target.r, 0, Math.PI * 2);
+      ctx1.fill();
+
+      // Lock-on Ring / Progress
+      ctx1.strokeStyle = "#ffffff";
+      ctx1.lineWidth = 2;
+      ctx1.beginPath();
+      ctx1.arc(p1Target.x, p1Target.y, p1Target.r + 4, 0, (Math.PI * 2) * (p1LockCharge / 100));
+      ctx1.stroke();
+
+      if (isHitting && !isLocked) {
+        msg1.innerText = `LOCKING IN... ${Math.floor(p1LockCharge)}%`;
+        msg1.style.color = "var(--yellow)";
+        playBeep(450 + p1LockCharge * 3, "sine", 0.04);
+      } else if (isLocked && !p1Passed) {
+        p1Passed = true;
+        msg1.innerText = "ALIGNMENT CONFIRMED! LAUNCHING PHASE 2...";
+        msg1.style.color = "var(--green)";
+        playBeep(880, "triangle", 0.2);
+        setTimeout(startPhase2, 600);
+      } else if (!isHitting && !p1Passed) {
+        msg1.innerText = "Adjust prism to align the beam...";
+        msg1.style.color = "var(--yellow)";
+      }
+    }
+
+    function pointToSegmentDist(px, py, x1, y1, x2, y2) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+      let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+    }
+
+    angleSlider.addEventListener('input', (e) => {
+      angleVal.innerText = `${e.target.value}°`;
+      drawPhase1();
+    });
+
+    /* =====================================================================
+       3. ROUND 2: FIREWALL INFILTRATION (INTERACTIVE & RIGOROUS)
+       ===================================================================== */
+    const canvas2 = document.getElementById('canvas2');
+    const ctx2 = canvas2.getContext('2d');
+    const msg2 = document.getElementById('msg2');
+    const sub2 = document.getElementById('sub2');
+
+    let p2LoopId = null;
+    let isHoldingCore = false;
+    let startPad = { x: 45, y: 140, r: 24 };
+    let player = { x: 45, y: 140, r: 9 };
+    let portal = { x: 515, y: 140, r: 22 };
+    let keys = [];
+    let lasers = [];
+    let keysCollected = 0;
+
+    function startPhase2() {
+      // UI State Shift
+      document.getElementById('phase1-ui').classList.add('hidden');
+      document.getElementById('phase2-ui').classList.remove('hidden');
+      document.getElementById('badge1').className = "badge cleared";
+      document.getElementById('badge2').className = "badge active";
+
+      player.x = startPad.x;
+      player.y = startPad.y;
+      isHoldingCore = false;
+      keysCollected = 0;
+      msg2.innerText = "Keys: 0 / 2";
+      msg2.style.color = "var(--cyan)";
+      sub2.innerText = "Click & hold the data core at START, pick up 2 keys, and escape!";
+
+      // Procedural key generation in safe zones
+      keys = [
+        { x: 195 + Math.random() * 40, y: 50 + Math.random() * 180, collected: false },
+        { x: 345 + Math.random() * 40, y: 50 + Math.random() * 180, collected: false }
+      ];
+
+      // Procedural scanner drones with different speeds and phase offsets
+      lasers = [
+        { x: 130, y: 20, vy: 2.6, h: 65, w: 6 },
+        { x: 270, y: 180, vy: -3.2, h: 70, w: 6 },
+        { x: 420, y: 60, vy: 3.6, h: 65, w: 6 }
+      ];
+
+      if (p2LoopId) cancelAnimationFrame(p2LoopId);
+      p2LoopId = requestAnimationFrame(loopPhase2);
+    }
+
+    function grabCore(pos) {
+      if (Math.hypot(pos.x - player.x, pos.y - player.y) < player.r + 16) {
+        isHoldingCore = true;
+        sub2.innerText = "Core linked! Navigate through the barriers.";
+      }
+    }
+
+    function dropCore() {
+      if (isHoldingCore) {
+        isHoldingCore = false;
+        // Reset player safely back to start if dropped mid-maze
+        player.x = startPad.x;
+        player.y = startPad.y;
+        sub2.innerText = "Signal lost! Return to START to re-grab the core.";
+      }
+    }
+
+    function handleMove(pos) {
+      if (isHoldingCore) {
+        player.x = Math.max(player.r, Math.min(canvas2.width - player.r, pos.x));
+        player.y = Math.max(player.r, Math.min(canvas2.height - player.r, pos.y));
+      }
+    }
+
+    // Desktop Mouse Handlers
+    canvas2.addEventListener('mousedown', (e) => grabCore(getCanvasCoords(canvas2, e)));
+    window.addEventListener('mouseup', dropCore);
+    canvas2.addEventListener('mousemove', (e) => handleMove(getCanvasCoords(canvas2, e)));
+
+    // Mobile Touch Handlers
+    canvas2.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      grabCore(getCanvasCoords(canvas2, e));
+    }, { passive: false });
+
+    window.addEventListener('touchend', dropCore);
+    canvas2.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      handleMove(getCanvasCoords(canvas2, e));
+    }, { passive: false });
+
+    function loopPhase2() {
+      ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
+
+      // 1. Draw Start Pad
+      ctx2.strokeStyle = "rgba(0, 243, 255, 0.4)";
+      ctx2.lineWidth = 2;
+      ctx2.beginPath();
+      ctx2.arc(startPad.x, startPad.y, startPad.r, 0, Math.PI * 2);
+      ctx2.stroke();
+      ctx2.fillStyle = "rgba(0, 243, 255, 0.1)";
+      ctx2.fill();
+      ctx2.fillStyle = "#7b92b2";
+      ctx2.font = "10px sans-serif";
+      ctx2.textAlign = "center";
+      ctx2.fillText("START", startPad.x, startPad.y + 36);
+
+      // 2. Draw & Update Moving Firewalls
+      ctx2.fillStyle = "#ff0055";
+      ctx2.shadowColor = "#ff0055";
+      ctx2.shadowBlur = 10;
+      for (let l of lasers) {
+        l.y += l.vy;
+        if (l.y <= 10 || l.y + l.h >= canvas2.height - 10) l.vy *= -1;
+
+        ctx2.fillRect(l.x, l.y, l.w, l.h);
+
+        // Precise AABB collision with player core
+        if (isHoldingCore) {
+          if (player.x + player.r > l.x && player.x - player.r < l.x + l.w &&
+              player.y + player.r > l.y && player.y - player.r < l.y + l.h) {
+            // Spotted! Force reset
+            isHoldingCore = false;
+            player.x = startPad.x;
+            player.y = startPad.y;
+            playBeep(160, "sawtooth", 0.25);
+            msg2.innerText = "BREACH DETECTED! Core sent back to start.";
+            msg2.style.color = "var(--pink)";
+          }
+        }
+      }
+      ctx2.shadowBlur = 0;
+
+      // 3. Draw & Collect Keys
+      for (let k of keys) {
+        if (!k.collected) {
+          ctx2.fillStyle = "#ffcc00";
+          ctx2.shadowColor = "#ffcc00";
+          ctx2.shadowBlur = 8;
+          ctx2.beginPath();
+          ctx2.arc(k.x, k.y, 7, 0, Math.PI * 2);
+          ctx2.fill();
+          ctx2.shadowBlur = 0;
+
+          if (isHoldingCore && Math.hypot(player.x - k.x, player.y - k.y) < player.r + 7) {
+            k.collected = true;
+            keysCollected++;
+            playBeep(750, "sine", 0.1);
+            msg2.innerText = `Keys: ${keysCollected} / 2`;
+            msg2.style.color = "var(--cyan)";
+          }
+        }
+      }
+
+      // 4. Draw Exit Portal
+      const portalOpen = keysCollected === 2;
+      ctx2.strokeStyle = portalOpen ? "#00ff66" : "#444";
+      ctx2.lineWidth = 3;
+      ctx2.beginPath();
+      ctx2.arc(portal.x, portal.y, portal.r, 0, Math.PI * 2);
+      ctx2.stroke();
+      ctx2.fillText(portalOpen ? "EXIT" : "LOCKED", portal.x, portal.y + 36);
+
+      // Check Exit Reached
+      if (portalOpen && isHoldingCore && Math.hypot(player.x - portal.x, player.y - portal.y) < portal.r) {
+        cancelAnimationFrame(p2LoopId);
+        playBeep(990, "square", 0.25);
+        document.getElementById('badge2').className = "badge cleared";
+        
+        // Execute customer's game!
+        setTimeout(onVerificationSuccess, 300);
+        return;
+      }
+
+      // 5. Draw Player Data Core
+      ctx2.fillStyle = isHoldingCore ? "#00f3ff" : "#ffffff";
+      ctx2.shadowColor = "#00f3ff";
+      ctx2.shadowBlur = isHoldingCore ? 12 : 4;
+      ctx2.beginPath();
+      ctx2.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+      ctx2.fill();
+      ctx2.shadowBlur = 0;
+
+      p2LoopId = requestAnimationFrame(loopPhase2);
+    }
+
+    // Start verification immediately
+    initPhase1();
+  
+window.__captchaDone = onVerificationSuccess;
+})();
+</script>
+<script>
+/* ===== PORTAL RAT — game (levels 1-2) ===== */
+(() => {
+const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+const GRID_X = 50, GRID_Y = 37, GRID_W = 1100, GRID_H = 825, CW = 1200, CH = 900;
+let COLS = 4, ROWS = 3, CELL_W = 275, CELL_H = 275;
+let WALL = 12, DOOR_W = 80, DOOR_H = 20, BEAM_W = 24, RAD = 20, SPEED = 280, SC = {rat: 1.6, cat: 3.4, eagle: 2.4};
+
+AudioSynthesizer.prototype.ping = function () {
+  if (this.muted) return; this.ensureInit(); const t = this.ctx.currentTime;
+  [1400, 1900].forEach((f, i) => { const o = this.ctx.createOscillator(), gn = this.ctx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(f, t + i * .09);
+    gn.gain.setValueAtTime(.07, t + i * .09); gn.gain.exponentialRampToValueAtTime(.001, t + i * .09 + .08); o.connect(gn); gn.connect(this.ctx.destination); o.start(t + i * .09); o.stop(t + i * .09 + .09); });
+};
+const audio = new AudioSynthesizer();
+window.__audio = audio;
+const clamp01 = t => Math.max(0, Math.min(1, t));
+
+// seeded random so levels can be tested repeatably
+let seed = (Date.now() % 100000) + 1;
+function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+
+// ---------- levels ----------
+// door table: key "c,r,E" joins (c,r)-(c+1,r); "c,r,S" joins (c,r)-(c,r+1). 'S' = safe, 'W' = wrong (cat behind it)
+const LEVELS = [{
+  type: 'signal', name: 'CUT THE SIGNAL',
+  goal: "Gnaw the eagle's wire before the cat finds you!",
+  cols: 4, rows: 3, wall: 12, door: [80, 20], beam: 24, rad: 20, speed: 280, sc: {rat: 1.6, cat: 3.4, eagle: 2.4},
+  gun: false,
+  start: [0, 2], junction: [3, 0], cat: [0, 0],
+  pingFirst: 2.5, pingEvery: 3.0, gnawTime: 2.5, graceTime: 0.5,
+  route: [[0, 2], [1, 2], [1, 1], [2, 1], [2, 0], [3, 0]],
+  doors: {
+    '0,0E': 'W', '1,0E': 'S', '2,0E': 'S',
+    '0,1E': 'W', '1,1E': 'S', '2,1E': 'W',
+    '0,2E': 'S', '1,2E': 'W', '2,2E': 'S',
+    '0,0S': 'W', '1,0S': 'W', '2,0S': 'S', '3,0S': 'W',
+    '0,1S': 'S', '1,1S': 'S', '2,1S': 'S', '3,1S': 'S'
   }
+}, {
+  type: 'guard', name: 'THE GUARDED BARREL',
+  goal: 'Get the gun from the cat\'s barrel, then reach the exit!',
+  cols: 8, rows: 8, wall: 8, door: [54, 12], beam: 14, rad: 12, speed: 200, sc: {rat: 1.0, cat: 2.0, eagle: 1.5},
+  gun: false,
+  start: [0, 7], exit: [7, 0], barrel: [3, 4], eagle: [6, 2],
+  openTime: 1.0, tpRange: 2, chaseDist: 650,
+  allDoors: true
+}];
 
-  // Mouth Stage (Wide Gaping Jaws for Eating Rat)
-  if (c.mouthStage >= 1) {
-    const mW = 52;
-    const mH = c.mouthStage === 2 ? 62 : 36;
-    ctx.fillStyle = '#660018';
-    ctx.fillRect(-mW / 2, 8, mW, mH);
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(-mW / 2, 8, mW, mH);
+// ---------- state ----------
+let li = 0, L = LEVELS[0];
+let state = 'CARD';              // CARD, PLAY, ATTACK, GAMEOVER, CLEAR
+let doors = {}, scuffs = [];
+const rat = {x: 0, y: 0, walk: 0, face: 1, moving: false, step: 0, gun: false, tpCool: 0};
+const cat = {c: 0, r: 0, x: 0, y: 0, bob: 0, state: 'SLEEP', chase: 0, target: null, wait: 0, home: {x: 0, y: 0}};
+const eagle = {x: 0, y: 0, state: 'PATROL', chase: 0, cool: 0, wait: 0, target: null};
+const ping = {t: 0, flash: 0, last: [0, 0], count: 0};
+const gnaw = {p: 0, near: false};
+const barrel = {x: 0, y: 0, p: 0, near: false, opened: false};
+let grace = 0, atk = null, shake = 0, particles = [], time = 0, clearT = 0, msgT = 0, msg = '';
+const keys = {};
+let mouse = {x: 0, y: 0};
 
-    // Giant sharp top & bottom pixel fangs
-    ctx.fillStyle = '#ffffff';
-    // Top Fangs
-    ctx.beginPath();
-    ctx.moveTo(-20, 8); ctx.lineTo(-14, 25); ctx.lineTo(-8, 8);
-    ctx.moveTo(8, 8); ctx.lineTo(14, 25); ctx.lineTo(20, 8);
-    ctx.fill();
+const rc = (c, r) => ({x: GRID_X + c * CELL_W + CELL_W / 2, y: GRID_Y + r * CELL_H + CELL_H / 2});
+const cellOf = (x, y) => [Math.max(0, Math.min(COLS - 1, Math.floor((x - GRID_X) / CELL_W))), Math.max(0, Math.min(ROWS - 1, Math.floor((y - GRID_Y) / CELL_H)))];
+const ratRoom = () => cellOf(rat.x, rat.y);
 
-    // Bottom Fangs
-    ctx.beginPath();
-    ctx.moveTo(-18, 8 + mH); ctx.lineTo(-12, 8 + mH - 18); ctx.lineTo(-6, 8 + mH);
-    ctx.moveTo(6, 8 + mH); ctx.lineTo(12, 8 + mH - 18); ctx.lineTo(18, 8 + mH);
-    ctx.fill();
+function doorKey(c, r, d) {
+  if (d === 'N') return r > 0 ? c + ',' + (r - 1) + 'S' : null;
+  if (d === 'S') return r < ROWS - 1 ? c + ',' + r + 'S' : null;
+  if (d === 'W') return c > 0 ? (c - 1) + ',' + r + 'E' : null;
+  return c < COLS - 1 ? c + ',' + r + 'E' : null;
+}
+const doorAt = (c, r, d) => { const k = doorKey(c, r, d); return k ? doors[k] || null : null; };
+
+function loadLevel(i) {
+  li = i; L = LEVELS[i];
+  COLS = L.cols; ROWS = L.rows; CELL_W = GRID_W / COLS; CELL_H = GRID_H / ROWS;
+  WALL = L.wall; DOOR_W = L.door[0]; DOOR_H = L.door[1]; BEAM_W = L.beam; RAD = L.rad; SPEED = L.speed; SC = L.sc;
+  doors = {};
+  if (L.allDoors) { for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { if (c < COLS - 1) doors[c + ',' + r + 'E'] = {kind: 'S', open: false, angle: 0}; if (r < ROWS - 1) doors[c + ',' + r + 'S'] = {kind: 'S', open: false, angle: 0}; } }
+  else for (const k in L.doors) doors[k] = {key: k, kind: L.doors[k], open: false, angle: 0};
+  scuffs = [];
+  for (let r = 0; r < ROWS; r++) { scuffs[r] = []; for (let c = 0; c < COLS; c++) {
+    const a = []; let s = (c * 7 + r * 13 + 5) * 9301 % 233280;
+    const rn = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    for (let n = 0; n < (L.cols > 5 ? 4 : 9); n++) a.push({x: 14 + rn() * (CELL_W - 28), y: 14 + rn() * (CELL_H - 28), len: 8 + rn() * 18, ang: rn() * 6.28, dark: rn() > .4, w: 1.2 + rn() * 1.2});
+    scuffs[r][c] = a; } }
+  const s = rc(L.start[0], L.start[1]); rat.x = s.x; rat.y = s.y; rat.walk = 0; rat.face = 1; rat.moving = false; rat.gun = false; rat.tpCool = 0;
+  gnaw.p = 0; gnaw.near = false; grace = 0; atk = null; shake = 0; particles = []; clearT = 0; msgT = 0;
+  ping.t = 0; ping.flash = 0; ping.count = 0; barrel.p = 0; barrel.near = false; barrel.opened = false;
+  if (L.type === 'signal') {
+    const k = rc(L.cat[0], L.cat[1]); cat.c = L.cat[0]; cat.r = L.cat[1]; cat.x = k.x; cat.y = k.y; cat.state = 'WIRE';
+    ping.t = L.pingFirst; ping.last = L.start.slice();
+  } else {
+    const b = rc(L.barrel[0], L.barrel[1]); barrel.x = b.x; barrel.y = b.y;
+    cat.home.x = b.x - CELL_W * .26; cat.home.y = b.y + CELL_H * .12; cat.x = cat.home.x; cat.y = cat.home.y; cat.state = 'SLEEP'; cat.chase = 0; cat.target = null; cat.wait = 0;
+    const e = rc(L.eagle[0], L.eagle[1]); eagle.x = e.x; eagle.y = e.y; eagle.state = 'PATROL'; eagle.chase = 0; eagle.cool = 2; eagle.wait = .5; eagle.target = null;
   }
+  state = 'CARD'; hud();
+}
+function startPlay() { state = 'PLAY'; if (L.type === 'signal') ping.flash = 2.2; audio.ensureInit(); }
+function restart() { loadLevel(li); startPlay(); }
+function nextLevel() { loadLevel(Math.min(LEVELS.length - 1, li + 1)); }
 
-  // Giant pixel paws slamming forward with sharp claws
-  if (c.pawY > 0) {
-    const py = 26 + c.pawY * 18;
-    ctx.fillStyle = '#170c24';
-    // Left Paw
-    ctx.fillRect(-72, py, 36, 28);
-    // Right Paw
-    ctx.fillRect(36, py, 36, 28);
+// ---------- input ----------
+window.addEventListener('keydown', e => {
+  if (document.getElementById('gameView').style.display === 'none') return;
+  const k = e.key.toLowerCase(); keys[k] = true; audio.ensureInit();
+  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
+  if (k === 'r') restart();
+  if ((k === 'enter' || k === ' ') && state === 'CARD') startPlay();
+  else if (k === 'enter' && state === 'GAMEOVER') restart();
+  else if (k === 'enter' && state === 'CLEAR' && clearT > 1) advance();
+  else if (state === 'PLAY' && L.type === 'guard' && rat.gun && (k === 'e' || k === ' ')) teleport();
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+canvas.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * canvas.width / r.width; mouse.y = (e.clientY - r.top) * canvas.height / r.height; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('mousedown', e => {
+  audio.ensureInit();
+  const r = canvas.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * canvas.width / r.width; mouse.y = (e.clientY - r.top) * canvas.height / r.height;
+  if (state === 'CARD') startPlay();
+  else if (state === 'GAMEOVER') restart();
+  else if (state === 'CLEAR' && clearT > 1) advance();
+  else if (state === 'PLAY' && L.type === 'guard' && rat.gun) teleport();
+});
+function advance() { if (li < LEVELS.length - 1) { nextLevel(); } else restart(); }
 
-    // Claws
-    ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < 3; i++) {
-      ctx.fillRect(-68 + i * 11, py + 24, 7, 13);
-      ctx.fillRect(40 + i * 11, py + 24, 7, 13);
+// ---------- HUD ----------
+function hud() {
+  const el = document.getElementById('radar-badge'); if (!el) return;
+  const lv = document.getElementById('lvl-badge'); if (lv) lv.textContent = 'LEVEL ' + (li + 1) + ' / 4 — ' + L.name;
+  const gb = document.getElementById('gun-badge'); if (gb) { gb.textContent = rat.gun ? 'PORTAL GUN: READY' : 'NO PORTAL GUN'; gb.style.opacity = rat.gun ? 1 : .7; gb.className = 'badge ' + (rat.gun ? 'badge-blue' : 'badge-red'); }
+  const hint = document.getElementById('hint'); if (hint) hint.innerHTML = L.type === 'signal'
+    ? 'MOVE: <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span> &nbsp; GNAW: hold <span class="key-badge">SPACE</span> at the box &nbsp; RESTART: <span class="key-badge">R</span>'
+    : 'MOVE: <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span> &nbsp; OPEN BARREL: hold <span class="key-badge">E</span> / <span class="key-badge">SPACE</span> &nbsp; TELEPORT (gun): <span class="key-badge">Click</span> / <span class="key-badge">E</span> &nbsp; RESTART: <span class="key-badge">R</span>';
+  if (state === 'CLEAR') { el.textContent = L.type === 'signal' ? 'SIGNAL CUT!' : 'LEVEL CLEARED!'; return; }
+  if (L.type === 'signal') {
+    const rr = ratRoom(), d = Math.abs(cat.c - rr[0]) + Math.abs(cat.r - rr[1]);
+    el.textContent = '📡 NEXT PING ' + Math.max(0, ping.t).toFixed(1) + 's   |   🐈 CAT ' + d + ' ROOM' + (d === 1 ? '' : 'S') + ' AWAY';
+    el.style.color = d <= 1 ? '#fca5a5' : '#facc15';
+  } else {
+    const names = {SLEEP: 'GUARDING', CHASE: 'CHASING!', ALERT: 'ALERTED!', RETURN: 'GOING BACK', PATROL: 'PATROLLING'};
+    el.textContent = '🐈 CAT: ' + (names[cat.state] || cat.state) + '   |   🦅 EAGLE: ' + (eagle.state === 'CHASE' ? 'CHASING!' : 'PATROLLING');
+    el.style.color = (cat.state === 'CHASE' || cat.state === 'ALERT' || eagle.state === 'CHASE') ? '#fca5a5' : '#facc15';
+  }
+}
+
+// ---------- movement ----------
+function particle(x, y, col, n, spd, size, decay) {
+  for (let i = 0; i < n; i++) particles.push({x, y, vx: (Math.random() - .5) * spd, vy: (Math.random() - .5) * spd, color: col, size: size + Math.random() * 3, alpha: 1, decay: decay || .04});
+}
+function touchDoor(d, c, r, dir) {
+  if (d.open) return true;
+  if (d.kind === 'W') { scare(d, c, r, dir); return false; }
+  d.open = true; audio.doorOpen(); particle(rat.x, rat.y, '#edd892', 8, 3, 3);
+  return true;
+}
+function scare(d, c, r, dir) {
+  const x0 = GRID_X + c * CELL_W, y0 = GRID_Y + r * CELL_H;
+  let sx = x0 + CELL_W / 2, sy = y0 + CELL_H / 2;
+  if (dir === 'N') sy = y0; else if (dir === 'S') sy = y0 + CELL_H; else if (dir === 'W') sx = x0; else sx = x0 + CELL_W;
+  startAttack(sx, sy, 'cat');
+}
+function startAttack(sx, sy, who) {
+  state = 'ATTACK'; atk = {t: 0, sx, sy, who: who || 'cat'}; shake = 16; audio.catJumpScare(); hud();
+}
+function moveRat(dx, dy) {
+  const nx = rat.x + dx, ny = rat.y + dy;
+  const minX = GRID_X + WALL + RAD, maxX = GRID_X + GRID_W - WALL - RAD, minY = GRID_Y + WALL + RAD, maxY = GRID_Y + GRID_H - WALL - RAD;
+  const [c, r] = ratRoom();
+  const L0 = GRID_X + c * CELL_W, R0 = L0 + CELL_W, T0 = GRID_Y + r * CELL_H, B0 = T0 + CELL_H;
+  let okX = true, okY = true;
+  if (dx !== 0) {
+    const east = nx > R0 - WALL - RAD, west = nx < L0 + WALL + RAD;
+    if (east || west) {
+      const dir = east ? 'E' : 'W', d = doorAt(c, r, dir);
+      if (d && Math.abs(rat.y - (T0 + CELL_H / 2)) < DOOR_W / 2 - 4) { if (!touchDoor(d, c, r, dir)) okX = false; } else okX = false;
     }
   }
-
-  // Massive Comic Balloon "CHOMP!"
-  if (c.mouthStage === 2) {
-    ctx.font = '900 32px ui-monospace, monospace';
-    ctx.fillStyle = '#ffea00';
-    ctx.strokeStyle = '#b71c1c';
-    ctx.lineWidth = 7;
-    ctx.strokeText("CHOMP!!", -60, -52);
-    ctx.fillText("CHOMP!!", -60, -52);
+  if (dy !== 0) {
+    const north = ny < T0 + WALL + RAD, south = ny > B0 - WALL - RAD;
+    if (north || south) {
+      const dir = north ? 'N' : 'S', d = doorAt(c, r, dir);
+      if (d && Math.abs(rat.x - (L0 + CELL_W / 2)) < DOOR_W / 2 - 4) { if (!touchDoor(d, c, r, dir)) okY = false; } else okY = false;
+    }
   }
-
-  ctx.restore();
+  if (state !== 'PLAY') return;
+  if (okX) rat.x = Math.max(minX, Math.min(maxX, nx));
+  if (okY) rat.y = Math.max(minY, Math.min(maxY, ny));
 }
 
-/* ==========================================================================
-   GAME OVER & VICTORY SCREENS
-   ========================================================================== */
-function renderGameOver() {
+// ---------- enemy movement through doors (level 2) ----------
+function bfsNext(c0, r0, c1, r1) {
+  if (c0 === c1 && r0 === r1) return null;
+  const prev = new Map(), key = (c, r) => c + ',' + r, q = [[c0, r0]]; prev.set(key(c0, r0), null);
+  while (q.length) {
+    const [c, r] = q.shift();
+    if (c === c1 && r === r1) { let cur = [c, r], p = prev.get(key(c, r)); while (p && !(p[0] === c0 && p[1] === r0)) { cur = p; p = prev.get(key(cur[0], cur[1])); } return cur; }
+    for (const [d, dc, dr] of [['N', 0, -1], ['S', 0, 1], ['W', -1, 0], ['E', 1, 0]]) {
+      const nc = c + dc, nr = r + dr; if (nc < 0 || nr < 0 || nc >= COLS || nr >= ROWS || prev.has(key(nc, nr))) continue;
+      if (!doorAt(c, r, d)) continue; prev.set(key(nc, nr), [c, r]); q.push([nc, nr]);
+    }
+  }
+  return null;
+}
+function goto_(e, x, y, step) { const dx = x - e.x, dy = y - e.y, d = Math.hypot(dx, dy); if (d < 1) return 0; const s = Math.min(step, d); e.x += dx / d * s; e.y += dy / d * s; return s; }
+// moves e one step toward (tx,ty) via doors; returns distance moved
+function walkTo(e, tx, ty, speed, dt) {
+  const [c, r] = cellOf(e.x, e.y), [tc, tr] = cellOf(tx, ty), step = speed * dt;
+  const nx = bfsNext(c, r, tc, tr);
+  if (!nx) return goto_(e, tx, ty, step);
+  let wx, wy;
+  if (nx[0] > c) { wx = GRID_X + (c + 1) * CELL_W + 4; wy = GRID_Y + r * CELL_H + CELL_H / 2; }
+  else if (nx[0] < c) { wx = GRID_X + c * CELL_W - 4; wy = GRID_Y + r * CELL_H + CELL_H / 2; }
+  else if (nx[1] > r) { wx = GRID_X + c * CELL_W + CELL_W / 2; wy = GRID_Y + (r + 1) * CELL_H + 4; }
+  else { wx = GRID_X + c * CELL_W + CELL_W / 2; wy = GRID_Y + r * CELL_H - 4; }
+  // open the door we are walking through (visual)
+  const dir = nx[0] > c ? 'E' : nx[0] < c ? 'W' : nx[1] > r ? 'S' : 'N', d = doorAt(c, r, dir); if (d && !d.open) { d.open = true; d.angle = 1.35; }
+  // line up with the door first, then go through
+  const aligned = (dir === 'E' || dir === 'W') ? Math.abs(e.y - wy) < 6 : Math.abs(e.x - wx) < 6;
+  if (!aligned) { const ax = (dir === 'E' || dir === 'W') ? e.x : wx, ay = (dir === 'E' || dir === 'W') ? wy : e.y; return goto_(e, ax, ay, step); }
+  return goto_(e, wx, wy, step);
+}
+
+// ---------- update ----------
+function catStep() {
+  const [tc, tr] = ping.last;
+  if (cat.c !== tc) cat.c += Math.sign(tc - cat.c); else if (cat.r !== tr) cat.r += Math.sign(tr - cat.r);
+}
+function update(dt) {
+  time += dt;
+  if (shake > 0) shake = Math.max(0, shake - dt * 26);
+  if (msgT > 0) msgT -= dt;
+  for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= p.decay; if (p.alpha <= 0) particles.splice(i, 1); }
+  cat.bob += dt;
+  if (L.type === 'signal') { const ct = rc(cat.c, cat.r); cat.x += (ct.x - cat.x) * Math.min(1, dt * 5); cat.y += (ct.y - cat.y) * Math.min(1, dt * 5); }
+
+  if (state === 'ATTACK') { atk.t += dt; shake = Math.min(22, shake + 1.5); if (atk.t > 1.4) { state = 'GAMEOVER'; hud(); } return; }
+  if (state === 'CLEAR') { clearT += dt; return; }
+  if (state !== 'PLAY') return;
+  if (ping.flash > 0) ping.flash -= dt;
+  if (rat.tpCool > 0) rat.tpCool -= dt;
+
+  // rat movement
+  let mx = 0, my = 0;
+  if (keys['w'] || keys['arrowup']) my--; if (keys['s'] || keys['arrowdown']) my++;
+  if (keys['a'] || keys['arrowleft']) mx--; if (keys['d'] || keys['arrowright']) mx++;
+  if (mx || my) {
+    const len = Math.hypot(mx, my); mx = mx / len * SPEED * dt; my = my / len * SPEED * dt;
+    rat.moving = true; rat.walk += dt * 11; if (mx) rat.face = mx > 0 ? 1 : -1;
+    rat.step += dt; if (rat.step > .22) { rat.step = 0; audio.footstep(); }
+    moveRat(mx, my);
+  } else rat.moving = false;
+  if (state !== 'PLAY') return;
+
+  if (L.type === 'signal') updateSignal(dt); else updateGuard(dt);
+  hud();
+}
+function updateSignal(dt) {
+  ping.t -= dt;
+  if (ping.t <= 0) { ping.t += L.pingEvery; ping.count++; ping.flash = 1.6; ping.last = ratRoom(); audio.ping(); catStep(); shake = Math.max(shake, 3); }
+  const rr = ratRoom();
+  if (cat.c === rr[0] && cat.r === rr[1]) { grace += dt; if (grace >= L.graceTime) { startAttack(cat.x, cat.y, 'cat'); return; } } else grace = 0;
+  const jb = rc(L.junction[0], L.junction[1]);
+  gnaw.near = Math.hypot(rat.x - jb.x, rat.y - jb.y) < 70;
+  if (gnaw.near && (keys[' '] || keys['g'] || keys['f'])) {
+    gnaw.p += dt / L.gnawTime; if (Math.random() < .5) particle(jb.x, jb.y, '#fde047', 1, 6, 3, .07);
+    if (Math.random() < .12) audio.footstep();
+    if (gnaw.p >= 1) { gnaw.p = 1; win(jb); }
+  } else gnaw.p = Math.max(0, gnaw.p - dt * 1.5);
+}
+function win(jb) {
+  state = 'CLEAR'; clearT = 0; audio.victoryFanfare();
+  particle(jb.x, jb.y, '#fde047', 60, 14, 5, .02); particle(jb.x, jb.y, '#38bdf8', 40, 12, 5, .02);
+  hud();
+}
+
+// ----- level 2: the cat guards the portal gun -----
+const catSpeed = {CHASE: 140, ALERT: 140, RETURN: 60, PATROL: 80};
+function updateGuard(dt) {
+  const rr = ratRoom();
+  const catCell = cellOf(cat.x, cat.y), egCell = cellOf(eagle.x, eagle.y);
+  // --- cat ---
+  const sameRoomCat = catCell[0] === rr[0] && catCell[1] === rr[1];
+  if (cat.state === 'SLEEP') {
+    if (sameRoomCat) { cat.state = 'CHASE'; cat.chase = L.chaseDist; audio.enemyAlert('cat'); shake = 6; msg = 'THE CAT WOKE UP!'; msgT = 1.6; }
+  } else if (cat.state === 'CHASE') {
+    const moved = walkTo(cat, rat.x, rat.y, catSpeed.CHASE, dt); cat.chase -= moved;
+    if (cat.chase <= 0) { cat.state = barrel.opened ? 'PATROL' : 'RETURN'; cat.wait = .5; msg = barrel.opened ? '' : 'The cat gave up and is going back to the barrel...'; msgT = 2.4; }
+  } else if (cat.state === 'ALERT') {
+    if (sameRoomCat) { cat.state = 'CHASE'; cat.chase = L.chaseDist; audio.enemyAlert('cat'); }
+    else {
+      const t = rc(cat.target[0], cat.target[1]);
+      if (catCell[0] === cat.target[0] && catCell[1] === cat.target[1] && Math.hypot(cat.x - t.x, cat.y - t.y) < 8) { cat.wait -= dt; if (cat.wait <= 0) cat.state = barrel.opened ? 'PATROL' : 'RETURN'; }
+      else { cat.wait = .6; walkTo(cat, t.x, t.y, catSpeed.ALERT, dt); }
+    }
+  } else if (cat.state === 'RETURN') {
+    if (sameRoomCat) { cat.state = 'CHASE'; cat.chase = L.chaseDist; audio.enemyAlert('cat'); }
+    else if (Math.hypot(cat.x - cat.home.x, cat.y - cat.home.y) < 5) { cat.state = 'SLEEP'; msg = 'The cat is back on guard.'; msgT = 2; }
+    else walkTo(cat, cat.home.x, cat.home.y, catSpeed.RETURN, dt);
+  } else if (cat.state === 'PATROL') {
+    if (sameRoomCat || Math.max(Math.abs(catCell[0] - rr[0]), Math.abs(catCell[1] - rr[1])) <= 1) { cat.state = 'CHASE'; cat.chase = L.chaseDist; audio.enemyAlert('cat'); }
+    else patrol(cat, catCell, catSpeed.PATROL, dt);
+  }
+  // --- eagle ---
+  if (eagle.cool > 0) eagle.cool -= dt;
+  const eDist = Math.max(Math.abs(egCell[0] - rr[0]), Math.abs(egCell[1] - rr[1]));
+  if (eagle.state === 'PATROL') {
+    if (eagle.cool <= 0 && eDist <= 1) {
+      eagle.state = 'CHASE'; eagle.chase = L.chaseDist * .75; audio.enemyAlert('eagle'); shake = 6; ping.flash = 1.4;
+      if (cat.state !== 'CHASE') { cat.state = 'ALERT'; cat.target = rr.slice(); cat.wait = .6; audio.ping(); msg = 'The EAGLE pinged the cat: "rat spotted!"'; msgT = 2.4; }
+    } else patrol(eagle, egCell, 90, dt);
+  } else if (eagle.state === 'CHASE') {
+    const moved = walkTo(eagle, rat.x, rat.y, 150, dt); eagle.chase -= moved;
+    if (eagle.chase <= 0) { eagle.state = 'PATROL'; eagle.cool = 3.5; eagle.wait = .5; eagle.target = null; }
+  }
+  if (ping.flash > 0) ping.flash = Math.max(0, ping.flash);
+  // --- touch = caught ---
+  if (cat.state !== 'SLEEP' && Math.hypot(cat.x - rat.x, cat.y - rat.y) < RAD + 13) { startAttack(cat.x, cat.y, 'cat'); return; }
+  if (Math.hypot(eagle.x - rat.x, eagle.y - rat.y) < RAD + 12) { startAttack(eagle.x, eagle.y, 'eagle'); return; }
+  // --- barrel ---
+  const bd = Math.hypot(rat.x - barrel.x, rat.y - barrel.y);
+  barrel.near = !barrel.opened && bd < RAD + 34;
+  if (barrel.near && (keys['e'] || keys[' '])) {
+    if (cat.state === 'SLEEP') { /* the cat is lying right here: it woke already when we entered */ }
+    barrel.p += dt / L.openTime; if (Math.random() < .3) particle(barrel.x, barrel.y, '#fde68a', 1, 5, 3, .06);
+    if (barrel.p >= 1) openBarrel();
+  } else barrel.p = Math.max(0, barrel.p - dt * 1.2);
+  // --- exit ---
+  const ex = rc(L.exit[0], L.exit[1]);
+  if (Math.hypot(rat.x - ex.x, rat.y - ex.y) < RAD + 22) { state = 'CLEAR'; clearT = 0; audio.victoryFanfare(); particle(ex.x, ex.y, '#fde047', 50, 12, 5, .02); particle(ex.x, ex.y, '#38bdf8', 40, 10, 5, .02); hud(); }
+}
+function patrol(e, cell, speed, dt) {
+  if (!e.target || Math.hypot(e.target.x - e.x, e.target.y - e.y) < 5) {
+    if (e.target) { e.wait -= dt; if (e.wait > 0) return; }
+    e.wait = .5 + rnd() * .8;
+    const opts = []; for (const [d, dc, dr] of [['N', 0, -1], ['S', 0, 1], ['W', -1, 0], ['E', 1, 0]]) if (doorAt(cell[0], cell[1], d)) opts.push([cell[0] + dc, cell[1] + dr]);
+    const pick = opts[Math.floor(rnd() * opts.length)]; e.target = rc(pick[0], pick[1]); return;
+  }
+  walkTo(e, e.target.x, e.target.y, speed, dt);
+}
+function openBarrel() {
+  barrel.opened = true; barrel.p = 1; rat.gun = true; audio.victoryFanfare();
+  particle(barrel.x, barrel.y, '#38bdf8', 40, 12, 5, .03); particle(barrel.x, barrel.y, '#fde047', 25, 10, 4, .03);
+  msg = 'GOT THE PORTAL GUN! Click / E to teleport up to 2 rooms.'; msgT = 4; shake = 5; hud();
+  if (cat.state !== 'CHASE') { cat.state = 'PATROL'; cat.target = null; }
+}
+function teleport() {
+  if (!rat.gun || rat.tpCool > 0 || state !== 'PLAY') return;
+  const [c, r] = ratRoom(), [tc, tr] = cellOf(mouse.x, mouse.y);
+  if (mouse.x < GRID_X || mouse.x > GRID_X + GRID_W || mouse.y < GRID_Y || mouse.y > GRID_Y + GRID_H) return;
+  if (Math.abs(tc - c) > L.tpRange || Math.abs(tr - r) > L.tpRange) { audio.doorOpen(); msg = 'Too far! Max 2 rooms.'; msgT = 1.2; return; }
+  const x0 = GRID_X + tc * CELL_W, y0 = GRID_Y + tr * CELL_H;
+  const tx = Math.max(x0 + WALL + RAD, Math.min(x0 + CELL_W - WALL - RAD, mouse.x)), ty = Math.max(y0 + WALL + RAD, Math.min(y0 + CELL_H - WALL - RAD, mouse.y));
+  particle(rat.x, rat.y, '#00e5ff', 18, 8, 5, .05); rat.x = tx; rat.y = ty; rat.tpCool = .4; audio.portalTeleport && audio.portalTeleport(); particle(rat.x, rat.y, '#38bdf8', 22, 9, 5, .04);
+}
+
+// ---------- render ----------
+const SPR = (n) => window.__sprite(n, 'color');
+function spr(n, x, y, s, flip) {
+  const c = SPR(n); ctx.imageSmoothingEnabled = false;
+  ctx.save(); ctx.translate(Math.round(x), Math.round(y)); if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(c, -c.width * s / 2, -c.height * s / 2, c.width * s, c.height * s); ctx.restore();
+}
+function drawDoor(x, y, w, h, kind, open, angle) {
+  ctx.save(); ctx.translate(x + w / 2, y + h / 2); if (open) { if (COLS > 5) ctx.globalAlpha = .25; else ctx.rotate(angle || 1.3); }
+  ctx.fillStyle = '#f3dfa2'; ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.strokeStyle = '#8d6820'; ctx.lineWidth = 2; ctx.strokeRect(-w / 2, -h / 2, w, h);
+  ctx.fillStyle = '#faecc6'; ctx.fillRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4);
+  ctx.strokeStyle = '#a27824'; ctx.lineWidth = 2.5; ctx.beginPath();
+  ctx.moveTo(-w / 2 + 2, -h / 2 + 2); ctx.lineTo(w / 2 - 2, h / 2 - 2); ctx.moveTo(w / 2 - 2, -h / 2 + 2); ctx.lineTo(-w / 2 + 2, h / 2 - 2); ctx.stroke();
+  ctx.restore();
+}
+function claws(x, y, vertical) { // three claw scratches (clue: a cat lives behind this door)
+  ctx.save(); ctx.translate(x, y); ctx.scale(1.3, 1.3); ctx.strokeStyle = '#7f1d1d'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  for (let i = -1; i <= 1; i++) { ctx.beginPath(); if (vertical) { ctx.moveTo(-10, i * 7 - 8); ctx.lineTo(10, i * 7 + 8); } else { ctx.moveTo(i * 7 - 8, -10); ctx.lineTo(i * 7 + 8, 10); } ctx.stroke(); }
+  ctx.restore();
+}
+function drawRooms() {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const rx = GRID_X + c * CELL_W, ry = GRID_Y + r * CELL_H;
+    const g = ctx.createLinearGradient(rx, ry, rx + CELL_W, ry + CELL_H);
+    g.addColorStop(0, '#9eaba2'); g.addColorStop(.5, '#b0bcb4'); g.addColorStop(1, '#94a198');
+    ctx.fillStyle = g; ctx.fillRect(rx, ry, CELL_W, CELL_H);
+    ctx.strokeStyle = 'rgba(60,70,65,.35)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(rx + CELL_W / 2, ry); ctx.lineTo(rx + CELL_W / 2, ry + CELL_H); ctx.moveTo(rx, ry + CELL_H / 2); ctx.lineTo(rx + CELL_W, ry + CELL_H / 2); ctx.stroke();
+    for (const s of scuffs[r][c]) { ctx.save(); ctx.translate(rx + s.x, ry + s.y); ctx.rotate(s.ang); ctx.strokeStyle = s.dark ? 'rgba(40,35,30,.28)' : 'rgba(15,15,15,.22)'; ctx.lineWidth = s.w; ctx.beginPath(); ctx.moveTo(-s.len / 2, 0); ctx.lineTo(s.len / 2, 0); ctx.stroke(); ctx.restore(); }
+    ctx.fillStyle = '#dde2dc';
+    ctx.fillRect(rx, ry, CELL_W, WALL); ctx.fillRect(rx, ry + CELL_H - WALL, CELL_W, WALL); ctx.fillRect(rx, ry, WALL, CELL_H); ctx.fillRect(rx + CELL_W - WALL, ry, WALL, CELL_H);
+    ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fillRect(rx + WALL, ry + WALL, CELL_W - WALL * 2, 7); ctx.fillRect(rx + WALL, ry + WALL, 7, CELL_H - WALL * 2);
+  }
+}
+function drawDoors() {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const rx = GRID_X + c * CELL_W, ry = GRID_Y + r * CELL_H, cx = rx + CELL_W / 2, cy = ry + CELL_H / 2;
+    const E = doorAt(c, r, 'E'), S = doorAt(c, r, 'S');
+    if (E) { drawDoor(rx + CELL_W - DOOR_H, cy - DOOR_W / 2, DOOR_H, DOOR_W, E.kind, E.open, -E.angle); drawDoor(rx + CELL_W, cy - DOOR_W / 2, DOOR_H, DOOR_W, E.kind, E.open, E.angle); }
+    if (S) { drawDoor(cx - DOOR_W / 2, ry + CELL_H - DOOR_H, DOOR_W, DOOR_H, S.kind, S.open, -S.angle); drawDoor(cx - DOOR_W / 2, ry + CELL_H, DOOR_W, DOOR_H, S.kind, S.open, S.angle); }
+    if (E && E.kind === 'W' && !E.open) { claws(rx + CELL_W - 46, cy, true); claws(rx + CELL_W + 46, cy, true); }
+    if (S && S.kind === 'W' && !S.open) { claws(cx, ry + CELL_H - 46, false); claws(cx, ry + CELL_H + 46, false); }
+  }
+}
+function drawBeams() {
+  ctx.save(); const bw = BEAM_W;
+  ctx.fillStyle = 'rgba(0,0,0,.38)';
+  for (let c = 0; c <= COLS; c++) ctx.fillRect(GRID_X + c * CELL_W - bw / 2 + 5, GRID_Y, 8, GRID_H);
+  for (let r = 0; r <= ROWS; r++) ctx.fillRect(GRID_X, GRID_Y + r * CELL_H - bw / 2 + 5, GRID_W, 8);
+  for (let c = 0; c <= COLS; c++) { const bx = GRID_X + c * CELL_W - bw / 2; ctx.fillStyle = '#e5b066'; ctx.fillRect(bx, GRID_Y - 4, bw, GRID_H + 8); ctx.fillStyle = '#fed7aa'; ctx.fillRect(bx, GRID_Y - 4, 3, GRID_H + 8); ctx.fillStyle = '#a16207'; ctx.fillRect(bx + bw - 3, GRID_Y - 4, 3, GRID_H + 8); }
+  for (let r = 0; r <= ROWS; r++) { const by = GRID_Y + r * CELL_H - bw / 2; ctx.fillStyle = '#e5b066'; ctx.fillRect(GRID_X - 4, by, GRID_W + 8, bw); ctx.fillStyle = '#fed7aa'; ctx.fillRect(GRID_X - 4, by, GRID_W + 8, 3); ctx.fillStyle = '#a16207'; ctx.fillRect(GRID_X - 4, by + bw - 3, GRID_W + 8, 3); }
+  if (COLS <= 5) for (let r = 0; r <= ROWS; r++) for (let c = 0; c <= COLS; c++) { const jx = GRID_X + c * CELL_W - bw / 2, jy = GRID_Y + r * CELL_H - bw / 2; ctx.fillStyle = '#fde68a'; ctx.fillRect(jx - 2, jy - 2, bw + 4, bw + 4); ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1; ctx.strokeRect(jx - 2, jy - 2, bw + 4, bw + 4); ctx.fillStyle = '#78350f'; ctx.fillRect(jx + bw / 2 - 2, jy + bw / 2 - 2, 4, 4); }
+  ctx.restore();
+}
+// The wire runs under the floor and lights up with every ping.
+function wirePoints() {
+  const pts = [], R = L.route;
+  for (let i = 0; i < R.length; i++) {
+    const a = rc(R[i][0], R[i][1]); pts.push([a.x, a.y]);
+    if (i < R.length - 1) { const b = rc(R[i + 1][0], R[i + 1][1]); pts.push([(a.x + b.x) / 2, (a.y + b.y) / 2]); }
+  }
+  return pts;
+}
+function drawWire() {
+  const lit = clamp01(ping.flash / 1.2), pts = wirePoints();
+  const jb = rc(L.junction[0], L.junction[1]);
+  ctx.save(); ctx.translate(jb.x, jb.y); ctx.scale(1.4, 1.4);
+  ctx.fillStyle = '#334155'; ctx.fillRect(-20, -16, 40, 32); ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3; ctx.strokeRect(-20, -16, 40, 32);
+  ctx.fillStyle = '#475569'; ctx.fillRect(-16, -12, 32, 24);
+  ctx.fillStyle = lit > 0 || Math.floor(time * 2) % 2 ? '#4ade80' : '#14532d'; ctx.beginPath(); ctx.arc(0, -3, 5, 0, 6.3); ctx.fill();
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.fillText('EARBUD', 0, 10);
+  ctx.restore();
+  if (lit <= 0) return;
+  ctx.save(); ctx.globalAlpha = lit; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#facc15'; ctx.shadowColor = '#facc15'; ctx.shadowBlur = 14; ctx.lineWidth = 6;
+  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+  ctx.shadowBlur = 0; ctx.strokeStyle = '#fffbe6'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+}
+function drawLastKnown() {
+  if (!ping.count) return;
+  const x = GRID_X + ping.last[0] * CELL_W, y = GRID_Y + ping.last[1] * CELL_H;
+  ctx.save(); ctx.strokeStyle = 'rgba(239,68,68,' + (.45 + .25 * Math.sin(time * 6)) + ')'; ctx.lineWidth = 5; ctx.setLineDash([14, 10]);
+  ctx.strokeRect(x + 16, y + 16, CELL_W - 32, CELL_H - 32); ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(239,68,68,.8)'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'left'; ctx.fillText('LAST SEEN', x + 24, y + 38); ctx.restore();
+}
+function drawCat() {
+  const by = cat.state === 'SLEEP' ? 0 : Math.sin(cat.bob * 3) * 2, k = SC.cat, o = k / 3.4;
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(cat.x, cat.y + 36 * o, 30 * o, 10 * o, 0, 0, 6.3); ctx.fill(); ctx.restore();
+  spr('cat', cat.x, cat.y + by, k);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cat.x + 31 * o, cat.y - 6 * o + by, 5.5 * o, 0, 6.3); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cat.x + 31 * o, cat.y + by); ctx.quadraticCurveTo(cat.x + 42 * o, cat.y + 26 * o + by, cat.x + 25 * o, cat.y + 34 * o + by); ctx.stroke(); ctx.restore();
+  if (L.type === 'guard' && cat.state === 'SLEEP') { // Zzz
+    ctx.save(); ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + Math.round(14 + Math.sin(time * 2) * 2) + 'px monospace'; ctx.textAlign = 'left'; ctx.fillText('z z Z', cat.x + 10, cat.y - 28 - (time * 8 % 8)); ctx.restore();
+  }
+  if (L.type === 'guard' && (cat.state === 'CHASE' || cat.state === 'ALERT')) { ctx.save(); ctx.fillStyle = '#ef4444'; ctx.font = 'bold 26px monospace'; ctx.textAlign = 'center'; ctx.fillText('!', cat.x, cat.y - 30); ctx.restore(); }
+}
+function drawEagle() {
+  if (L.type === 'signal') {
+    const jb = rc(L.junction[0], L.junction[1]), ex = jb.x + 90, ey = 18 + Math.sin(time * 5) * 3;
+    const near = ping.flash > 0 ? clamp01(ping.flash / 1.6) : 0;
+    if (near > 0) {
+      ctx.save(); ctx.strokeStyle = 'rgba(250,204,21,' + near + ')'; ctx.lineWidth = 3;
+      const rad = (1 - near) * 90; ctx.beginPath(); ctx.arc(ex, ey + 8, 14 + rad, 0, 6.3); ctx.stroke();
+      ctx.setLineDash([6, 8]); ctx.globalAlpha = near * .8; ctx.beginPath(); ctx.moveTo(ex, ey + 30); ctx.lineTo(cat.x, cat.y - 28); ctx.stroke(); ctx.restore();
+    }
+    spr('eagle', ex, ey + 24, SC.eagle);
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex - 16, ey + 14, 4, 0, 6.3); ctx.fill(); ctx.restore();
+    if (near > .55) { ctx.save(); ctx.fillStyle = '#facc15'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'right'; ctx.fillText('BZZT! RAT SPOTTED!', ex - 40, ey + 16); ctx.restore(); }
+  } else {
+    const fy = eagle.y + Math.sin(time * 6) * 3;
+    ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(eagle.x, eagle.y + 24, 14, 5, 0, 0, 6.3); ctx.fill(); ctx.restore();
+    spr('eagle', eagle.x, fy - 6, SC.eagle);
+    if (eagle.state === 'CHASE') { ctx.save(); ctx.fillStyle = '#ef4444'; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.fillText('!', eagle.x, fy - 34); ctx.restore(); }
+    if (ping.flash > 0) { const f = clamp01(ping.flash / 1.4); ctx.save(); ctx.strokeStyle = 'rgba(250,204,21,' + f + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(eagle.x, fy, 14 + (1 - f) * 60, 0, 6.3); ctx.stroke(); ctx.restore(); }
+  }
+}
+function drawRat() {
+  const bob = rat.moving ? Math.abs(Math.sin(rat.walk)) * 2 : 0, o = SC.rat / 1.6;
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(rat.x, rat.y + 17 * o, 27 * o, 9 * o, 0, 0, 6.3); ctx.fill(); ctx.restore();
+  spr(rat.gun ? 'rat' : 'ratng', rat.x, rat.y - bob, SC.rat, rat.face < 0);
+}
+function drawBarrel() {
+  const x = barrel.x, y = barrel.y, o = CELL_H / 275 * 2.2;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(0, 20 * o, 26 * o, 8 * o, 0, 0, 6.3); ctx.fill();
+  if (!barrel.opened) { const gl = ctx.createRadialGradient(0, 0, 4, 0, 0, 50 * o); gl.addColorStop(0, 'rgba(56,189,248,.35)'); gl.addColorStop(1, 'rgba(56,189,248,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 50 * o, 0, 6.3); ctx.fill(); }
+  ctx.fillStyle = '#8a5a3a'; ctx.fillRect(-18 * o, -20 * o, 36 * o, 40 * o); ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 2; ctx.strokeRect(-18 * o, -20 * o, 36 * o, 40 * o);
+  ctx.fillStyle = '#5b3a24'; ctx.fillRect(-18 * o, -9 * o, 36 * o, 4 * o); ctx.fillRect(-18 * o, 7 * o, 36 * o, 4 * o);
+  if (barrel.opened) { ctx.fillStyle = '#1a0f08'; ctx.fillRect(-14 * o, -24 * o, 28 * o, 8 * o); } else { ctx.fillStyle = '#a8734a'; ctx.fillRect(-18 * o, -24 * o, 36 * o, 6 * o); }
+  if (!barrel.opened) { ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + Math.max(9, Math.round(11 * o)) + 'px monospace'; ctx.textAlign = 'center'; ctx.fillText('GUN', 0, 4 * o); }
+  ctx.restore();
+  if (barrel.near && state === 'PLAY') {
+    ctx.save(); ctx.textAlign = 'center'; ctx.fillStyle = '#12163f'; ctx.fillRect(x - 56, y - 64, 112, 34);
+    ctx.fillStyle = '#fdf3e1'; ctx.font = 'bold 11px monospace'; ctx.fillText(barrel.p > 0 ? 'OPENING...' : 'HOLD E: OPEN', x, y - 57);
+    ctx.fillStyle = '#334155'; ctx.fillRect(x - 48, y - 44, 96, 8); ctx.fillStyle = '#4ade80'; ctx.fillRect(x - 48, y - 44, 96 * barrel.p, 8); ctx.restore();
+  }
+}
+function drawExit() {
+  const e = rc(L.exit[0], L.exit[1]); ctx.save(); ctx.translate(e.x, e.y);
+  const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 44); g.addColorStop(0, 'rgba(74,222,128,.7)'); g.addColorStop(1, 'rgba(74,222,128,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 44, 0, 6.3); ctx.fill();
+  ctx.fillStyle = '#14532d'; ctx.fillRect(-16, -22, 32, 44); ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 3; ctx.strokeRect(-16, -22, 32, 44);
+  ctx.fillStyle = '#4ade80'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText('EXIT', 0, 4); ctx.restore();
+}
+function drawRange() {
+  if (!(L.type === 'guard' && rat.gun && state === 'PLAY')) return;
+  const [c, r] = ratRoom(), c0 = Math.max(0, c - L.tpRange), c1 = Math.min(COLS - 1, c + L.tpRange), r0 = Math.max(0, r - L.tpRange), r1 = Math.min(ROWS - 1, r + L.tpRange);
+  ctx.save(); ctx.strokeStyle = 'rgba(56,189,248,.8)'; ctx.fillStyle = 'rgba(56,189,248,.08)'; ctx.lineWidth = 3; ctx.setLineDash([10, 8]);
+  const x = GRID_X + c0 * CELL_W, y = GRID_Y + r0 * CELL_H, w = (c1 - c0 + 1) * CELL_W, h = (r1 - r0 + 1) * CELL_H; ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
+  const [mc, mr] = cellOf(mouse.x, mouse.y), ok = Math.abs(mc - c) <= L.tpRange && Math.abs(mr - r) <= L.tpRange;
+  ctx.strokeStyle = ok ? '#4ade80' : '#ef4444'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 10, 0, 6.3); ctx.moveTo(mouse.x - 15, mouse.y); ctx.lineTo(mouse.x + 15, mouse.y); ctx.moveTo(mouse.x, mouse.y - 15); ctx.lineTo(mouse.x, mouse.y + 15); ctx.stroke();
+  ctx.restore();
+}
+function drawParticles() { for (const p of particles) { ctx.save(); ctx.globalAlpha = Math.max(0, p.alpha); ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); ctx.restore(); } }
+function panel(x, y, w, h) { ctx.fillStyle = '#12163f'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#d4a634'; ctx.fillRect(x + 4, y + 4, w - 8, h - 8); ctx.fillStyle = '#fdf3e1'; ctx.fillRect(x + 7, y + 7, w - 14, h - 14); }
+function txt(s, x, y, size, col, align) { ctx.font = 'bold ' + size + 'px ui-monospace,Menlo,Consolas,monospace'; ctx.textAlign = align || 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = col || '#1f2a6b'; String(s).split('\n').forEach((l, i) => ctx.fillText(l, x, y + i * (size + 8))); }
+function drawCard() {
+  ctx.fillStyle = 'rgba(8,10,28,.72)'; ctx.fillRect(0, 0, CW, CH); ctx.save(); ctx.translate(120, 90);
+  panel(150, 150, 660, 420);
+  txt('LEVEL ' + (li + 1) + ': ' + L.name, 480, 182, 30, '#1f2a6b', 'center');
+  txt('GOAL: ' + L.goal, 480, 238, L.type === 'guard' ? 16 : 18, '#7f1d1d', 'center');
+  if (L.type === 'signal') {
+    txt('The EAGLE pings the cat every few seconds. The cat runs to the room\nwhere you were last seen. No portal gun: you only have your teeth!', 480, 290, 15, '#1f2a6b', 'center');
+    txt('WASD / arrows ... move (push into a door to open it)\nSCRATCHED door ... a cat is waiting behind it. Don\'t open it!\nThe WIRE lights up on every ping. Follow it to the EARBUD box.\nHold SPACE at the box to gnaw the wire.', 190, 360, 15, '#1f2a6b', 'left');
+  } else {
+    txt('Your portal gun is locked in a BARREL, and the CAT guards it.\nStep into the cat\'s room to wake it, then RUN! It gives up after\na while and walks back. Loop around it and open the barrel!', 480, 285, 14, '#1f2a6b', 'center');
+    txt('WASD / arrows ... move          EAGLE ... spots you, pings the cat\nHold E / SPACE at the barrel to open it (about 1 second)\nWith the gun: CLICK (or E) to teleport up to 2 rooms, through walls\nReach the green EXIT in the top-right room', 190, 365, 15, '#1f2a6b', 'left');
+  }
+  if (Math.floor(time * 2) % 2 === 0) txt('CLICK or press ENTER to start', 480, 520, 18, '#1f2a6b', 'center');
+  ctx.restore();
+}
+function drawAttack() {
+  const t = atk.t; ctx.save();
+  let x, y, s; const big = atk.who === 'eagle' ? 14 : 15;
+  if (t < .5) { const p = t / .5, e = p * p; x = atk.sx + (rat.x - atk.sx) * e; y = atk.sy + (rat.y - atk.sy) * e; s = 4 + e * (big - 4); }
+  else { x = rat.x; y = rat.y; s = big + Math.sin(t * 40) * .8; }
+  ctx.fillStyle = 'rgba(120,0,20,' + clamp01(t * 1.2) * .55 + ')'; ctx.fillRect(0, 0, CW, CH);
+  spr(atk.who, x, y, s); ctx.restore();
+  if (t > .5) { ctx.save(); ctx.fillStyle = '#fff'; ctx.font = 'bold 56px ui-monospace,Menlo,Consolas,monospace'; ctx.textAlign = 'center'; ctx.fillText('CHOMP!', CW / 2 + (Math.random() - .5) * 8, CH / 2 - 40); ctx.restore(); }
+}
+function drawEndCard(title, body, col, hint) {
+  ctx.fillStyle = 'rgba(8,10,28,.78)'; ctx.fillRect(0, 0, CW, CH); ctx.save(); ctx.translate(120, 90);
+  panel(190, 230, 580, 250);
+  txt(title, 480, 262, 34, col, 'center'); txt(body, 480, 322, 16, '#1f2a6b', 'center');
+  if (Math.floor(time * 2) % 2 === 0) txt(hint, 480, 430, 15, '#1f2a6b', 'center');
+  ctx.restore();
+}
+function drawGnawBar() {
+  const jb = rc(L.junction[0], L.junction[1]);
+  if (gnaw.near && state === 'PLAY') {
+    ctx.save(); ctx.textAlign = 'center'; ctx.fillStyle = '#12163f'; ctx.fillRect(jb.x - 62, jb.y + 38, 124, 40);
+    ctx.fillStyle = '#fdf3e1'; ctx.font = 'bold 12px monospace'; ctx.fillText(gnaw.p > 0 ? 'GNAWING...' : 'HOLD SPACE: GNAW', jb.x, jb.y + 49);
+    ctx.fillStyle = '#334155'; ctx.fillRect(jb.x - 56, jb.y + 63, 112, 9); ctx.fillStyle = '#4ade80'; ctx.fillRect(jb.x - 56, jb.y + 63, 112 * gnaw.p, 9); ctx.restore();
+  }
+}
+function drawMsg() {
+  if (msgT <= 0 || state !== 'PLAY') return;
+  ctx.save(); ctx.globalAlpha = clamp01(msgT); ctx.fillStyle = '#12163f'; const w = 12 * msg.length + 40; ctx.fillRect(CW / 2 - w / 2, CH - 74, w, 40);
+  ctx.fillStyle = '#fdf3e1'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(msg, CW / 2, CH - 54); ctx.restore();
+}
+function render() {
   ctx.save();
-  ctx.fillStyle = 'rgba(15, 2, 5, 0.92)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // CRT Scanlines
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-  for (let y = 0; y < canvas.height; y += 4) {
-    ctx.fillRect(0, y, canvas.width, 2);
-  }
-
-  ctx.textAlign = 'center';
-  ctx.font = '900 68px ui-monospace, monospace';
-  ctx.fillStyle = '#ff1744';
-  ctx.shadowColor = '#d50000';
-  ctx.shadowBlur = 28;
-  ctx.fillText("GAME OVER", canvas.width / 2, 220);
-  ctx.shadowBlur = 0;
-
-  ctx.font = '700 22px ui-monospace, monospace';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText("🐱 WRONG DOOR! THE GIANT 2D PIXEL CAT ATE YOU!", canvas.width / 2, 290);
-
-  ctx.font = '16px ui-monospace, monospace';
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillText("In Takeshi's door maze, bad doors hold terrifying predators.", canvas.width / 2, 335);
-  ctx.fillText("Strategy: Use your Portal Gun to scout rooms or bypass doors!", canvas.width / 2, 365);
-
-  // Try Again Button
-  const by = 440;
-  ctx.fillStyle = '#dc2626';
-  ctx.fillRect(canvas.width / 2 - 140, by, 280, 52);
-  ctx.strokeStyle = '#f87171';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(canvas.width / 2 - 140, by, 280, 52);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px ui-monospace, monospace';
-  ctx.fillText("TRY AGAIN (R / CLICK)", canvas.width / 2, by + 34);
-
+  if (shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+  ctx.fillStyle = '#0f141d'; ctx.fillRect(0, 0, CW, CH);
+  drawRooms();
+  if (L.type === 'signal') { drawLastKnown(); drawWire(); }
+  drawDoors();
+  if (L.type === 'signal') drawGnawBar(); else { drawExit(); drawBarrel(); drawRange(); }
+  if (state !== 'ATTACK' || atk.t < .5) drawRat();
+  drawCat();
+  if (L.type === 'guard') drawEagle();
+  drawParticles(); drawBeams();
+  if (L.type === 'signal') drawEagle();
+  drawMsg();
+  if (state === 'CARD') drawCard();
+  if (state === 'ATTACK') drawAttack();
+  if (state === 'GAMEOVER') drawEndCard(atk && atk.who === 'eagle' ? 'THE EAGLE GOT YOU!' : 'THE CAT GOT YOU!', L.type === 'signal' ? 'The eagle told it exactly where you were.' : 'Lure the cat away, then loop around it!', '#7f1d1d', 'press R or click to try again');
+  if (state === 'CLEAR') drawEndCard(L.type === 'signal' ? 'SIGNAL CUT!' : 'LEVEL 2 CLEARED!', L.type === 'signal' ? 'The eagle can\'t talk to the cat anymore.\nNext: the cat guards your portal gun.' : 'You beat the cat, and the gun is yours.\nLevels 3 and 4 are coming next.', '#14532d', clearT > 1 ? (li < LEVELS.length - 1 ? 'press ENTER for the next level' : 'press ENTER to replay this level') : '');
   ctx.restore();
 }
 
-function renderVictory() {
-  ctx.save();
-  ctx.fillStyle = 'rgba(8, 28, 18, 0.92)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Scanlines
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-  for (let y = 0; y < canvas.height; y += 4) {
-    ctx.fillRect(0, y, canvas.width, 2);
-  }
-
-  ctx.textAlign = 'center';
-  ctx.font = '900 64px ui-monospace, monospace';
-  ctx.fillStyle = '#fbbf24';
-  ctx.shadowColor = '#f59e0b';
-  ctx.shadowBlur = 28;
-  ctx.fillText("VICTORY!", canvas.width / 2, 220);
-  ctx.shadowBlur = 0;
-
-  ctx.font = '700 24px ui-monospace, monospace';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText("🧀 PORTAL RAT ESCAPED WITH THE CHEESE!", canvas.width / 2, 290);
-
-  ctx.font = '16px ui-monospace, monospace';
-  ctx.fillStyle = '#a7f3d0';
-  ctx.fillText("You successfully navigated the deadly Takeshi Knock-Knock maze!", canvas.width / 2, 335);
-  ctx.fillText("All 2D cats left hungry and disappointed.", canvas.width / 2, 365);
-
-  const by = 440;
-  ctx.fillStyle = '#059669';
-  ctx.fillRect(canvas.width / 2 - 140, by, 280, 52);
-  ctx.strokeStyle = '#34d399';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(canvas.width / 2 - 140, by, 280, 52);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px ui-monospace, monospace';
-  ctx.fillText("PLAY AGAIN (R / CLICK)", canvas.width / 2, by + 34);
-
-  ctx.restore();
+// ---------- loop ----------
+let prev = performance.now(), running = false;
+function loop(now) { const dt = Math.min((now - prev) / 1000, .1); prev = now; update(dt); render(); if (running) requestAnimationFrame(loop); }
+function show() { // called when the intro ends
+  document.getElementById('introView').style.display = 'none';
+  document.getElementById('gameView').style.display = '';
+  document.body.className = 'gameBody';
+  loadLevel(0);
+  if (!running) { running = true; prev = performance.now(); requestAnimationFrame(loop); }
 }
+function hide() { running = false; document.getElementById('gameView').style.display = 'none'; document.getElementById('introView').style.display = 'flex'; document.body.className = ''; }
+window.__startGame = show; window.__stopGame = hide;
+window.__g = {update, keys, rat, cat, eagle, ping, gnaw, barrel, mouse, get state() { return state; }, get L() { return L; }, get li() { return li; }, ratRoom, startPlay, restart, loadLevel, doors: () => doors, rc, cellOf, LEVELS, setSeed: s => { seed = s; }, teleport, get cell() { return [CELL_W, CELL_H]; }};
+})();
 
-function restartMaze() {
-  setupMaze();
-}
-
-function generateNewRandomMaze() {
-  setupMaze();
-}
-
-/* ==========================================================================
-   MAIN TICK / LOOP
-   ========================================================================== */
-let prevTime = performance.now();
-function gameLoop(now) {
-  const dt = Math.min((now - prevTime) / 1000, 0.1);
-  prevTime = now;
-
-  updateGame(dt);
-  render();
-
-  requestAnimationFrame(gameLoop);
-}
-
-// Initial Boot
-setupMaze();
-requestAnimationFrame((t) => {
-  prevTime = t;
-  gameLoop(t);
-});
 </script>
 </body>
 </html>
