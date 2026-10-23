@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Rat: Takeshi's Cat Maze</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background-color: #0b0f17;
+      color: #e6edf3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+    #game-wrapper {
+      position: relative;
+      border: 3px solid #d4a373;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.85), 0 0 25px rgba(212, 163, 115, 0.25);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #11141c;
+      max-width: 100%;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      cursor: crosshair;
+      max-width: 100%;
+      height: auto;
+    }
+    .hud-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 960px;
+      background: #161b26;
+      border: 2px solid #283042;
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .badge-blue {
+      background: rgba(0, 150, 255, 0.2);
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+    }
+    .badge-orange {
+      background: rgba(255, 120, 0, 0.2);
+      color: #fb923c;
+      border: 1px solid #ea580c;
+    }
+    .bottom-bar {
+      width: 100%;
+      max-width: 960px;
+      background: #161b26;
+      border: 2px solid #283042;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #94a3b8;
+      gap: 10px;
+    }
+    .key-badge {
+      background: #232b3b;
+      border: 1px solid #3b455b;
+      color: #60a5fa;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .btn-arcade {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-family: inherit;
+      font-size: 12px;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-arcade:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn-arcade.muted {
+      background: #283042;
+      color: #cbd5e1;
+    }
+    .btn-arcade.muted:hover {
+      background: #333d54;
+    }
+    .crt-watermark {
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      color: rgba(255, 255, 255, 0.45);
+      font-family: "Impact", "Arial Black", sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      pointer-events: none;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    .radar-box {
+      color: #facc15;
+      background: rgba(113, 63, 18, 0.4);
+      padding: 2px 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(202, 138, 4, 0.5);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Status Bar -->
+  <div class="hud-bar">
+    <div style="display:flex; align-items:center; gap: 14px;">
+      <span style="display:flex; align-items:center; gap: 6px; color: #fbbf24; font-weight: bold;">
+        <span>🐀</span>
+        <span>PORTAL RAT</span>
+      </span>
+      <span id="radar-badge" class="radar-box">
+        🧀 CHEESE DISTANCE: CALCULATING...
+      </span>
+    </div>
+
+    <div style="display:flex; align-items:center; gap: 12px;">
+      <div style="display:flex; align-items:center; gap: 8px;">
+        <span style="font-size: 11px; color: #94a3b8;">PORTALS:</span>
+        <span id="badge-blue" class="badge badge-blue">● BLUE [Q/LMB]</span>
+        <span id="badge-orange" class="badge badge-orange">● ORANGE [E/RMB]</span>
+      </div>
+      <button class="btn-arcade muted" id="sound-btn" onclick="toggleAudio()">🔊 SFX: ON</button>
+    </div>
+  </div>
+
+  <!-- Game Container with CRT Japanese TV aesthetic -->
+  <div id="game-wrapper">
+    <canvas id="gameCanvas" width="960" height="720"></canvas>
+    <div class="crt-watermark">TBS 2 &nbsp;10:54</div>
+  </div>
+
+  <!-- Bottom Controls & Action Bar -->
+  <div class="bottom-bar">
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap: 8px;">
+      <span>MOVE:</span>
+      <span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span>
+      <span style="color: #475569;">|</span>
+      <span>DOORS:</span>
+      <span style="color: #cbd5e1;">Push into door panel</span>
+      <span style="color: #475569;">|</span>
+      <span>PORTALS:</span>
+      <span class="key-badge">Left Click</span> / <span class="key-badge">Q</span> : Blue &nbsp;
+      <span class="key-badge">Right Click</span> / <span class="key-badge">E</span> : Orange
+    </div>
+    <div style="display:flex; align-items:center; gap: 8px;">
+      <button class="btn-arcade" onclick="restartMaze()">🔄 RESET (R)</button>
+      <button class="btn-arcade muted" onclick="generateNewRandomMaze()">🎲 NEW LAYOUT</button>
+    </div>
+  </div>
+
+<script>
+/* ==========================================================================
+   WEB AUDIO SOUND SYNTHESIZER
+   Zero external audio files - fully procedural retro synthesized sounds!
+   ========================================================================== */
+class AudioSynthesizer {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+  }
+  ensureInit() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+  footstep() {
+    if (this.muted) return;
+    this.ensureInit();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(120 + Math.random() * 40, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.04);
+  }
+  portalFire(color) {
+    if (this.muted) return;
+    this.ensureInit();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    const baseFreq = color === 'blue' ? 480 : 340;
+    osc.frequency.setValueAtTime(baseFreq, t);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 3.2, t + 0.16);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(baseFreq * 2, t);
+    filter.Q.setValueAtTime(3.5, t);
+
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.2);
+  }
+  portalTeleport() {
+    if (this.muted) return;
+    this.ensureInit();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(750, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t + 0.28);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
+  doorOpen() {
+    if (this.muted) return;
+    this.ensureInit();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(160, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + 0.22);
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.22);
+  }
+  doorBonk() {
+    if (this.muted) return;
+    this.ensureInit();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(80, t);
+    osc.frequency.exponentialRampToValueAtTime(35, t + 0.15);
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.15);
+  }
+  catJumpScare() {
+    if (this.muted) return;
+    this.ensureInit();
+    const t = this.ctx.currentTime;
+    // Dramatic shrieking cat hiss / meow
+    const meow = this.ctx.createOscillator();
+    const meowGain = this.ctx.createGain();
+    meow.type = 'sawtooth';
+    meow.frequency.setValueAtTime(650, t);
+    meow.frequency.linearRampToValueAtTime(1300, t + 0.15);
+    meow.frequency.linearRampToValueAtTime(320, t + 0.55);
+
+    meowGain.gain.setValueAtTime(0.35, t);
+    meowGain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+
+    meow.connect(meowGain);
+    meowGain.connect(this.ctx.destination);
+    meow.start(t);
+    meow.stop(t + 0.6);
+
+    // Deep sub impact
+    const sub = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(110, t);
+    sub.frequency.exponentialRampToValueAtTime(25, t + 0.5);
+    subGain.gain.setValueAtTime(0.4, t);
+    subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    sub.connect(subGain);
+    subGain.connect(this.ctx.destination);
+    sub.start(t);
+    sub.stop(t + 0.5);
+
+    // Crunch / Chomp at 0.45s
+    setTimeout(() => {
+      if (this.muted || !this.ctx) return;
+      const ct = this.ctx.currentTime;
+      const crunch = this.ctx.createOscillator();
+      const crunchGain = this.ctx.createGain();
+      crunch.type = 'square';
+      crunch.frequency.setValueAtTime(120, ct);
+      crunch.frequency.exponentialRampToValueAtTime(30, ct + 0.35);
+      crunchGain.gain.setValueAtTime(0.45, ct);
+      crunchGain.gain.exponentialRampToValueAtTime(0.001, ct + 0.35);
+      crunch.connect(crunchGain);
+      crunchGain.connect(this.ctx.destination);
+      crunch.start(ct);
+      crunch.stop(ct + 0.35);
+    }, 450);
+  }
+  victoryFanfare() {
+    if (this.muted) return;
+    this.ensureInit();
+    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((f, i) => {
+      const t = this.ctx.currentTime + i * 0.09;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    });
+  }
+}
+
+const audio = new AudioSynthesizer();
+function toggleAudio() {
+  audio.muted = !audio.muted;
+  document.getElementById('sound-btn').innerText = audio.muted ? '🔇 SFX: OFF' : '🔊 SFX: ON';
+}
+
+/* ==========================================================================
+   MAZE ENGINE & GAME CONSTANTS
+   Replicating Takeshi's Castle: 3 Rows x 4 Columns cubicle room grid!
+   ========================================================================== */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const COLS = 4;
+const ROWS = 3;
+const GRID_X = 40;
+const GRID_Y = 30;
+const GRID_W = 880;
+const GRID_H = 660;
+const CELL_W = GRID_W / COLS; // 220px
+const CELL_H = GRID_H / ROWS; // 220px
+const BEAM_W = 20;
+const WALL_THICK = 10;
+const DOOR_W = 60;
+const DOOR_H = 16;
+
+let gameState = 'PLAYING'; // 'PLAYING', 'CAT_ATTACK', 'GAMEOVER', 'VICTORY'
+let attackTimer = 0;
+let screenShake = 0;
+let deathDoorInfo = null;
+
+let rooms = [];
+let particles = [];
+let bullets = [];
+
+const player = {
+  x: 0,
+  y: 0,
+  radius: 13,
+  speed: 3.4,
+  walkCycle: 0,
+  moving: false,
+  bluePortal: null,
+  orangePortal: null,
+  teleportCooldown: 0
+};
+
+const cheese = {
+  cellX: 3,
+  cellY: 0,
+  x: 0,
+  y: 0,
+  collected: false,
+  glow: 0
+};
+
+// 2D Pixelated Cat Attack Animation State
+const catAttack = {
+  x: 0,
+  y: 0,
+  startX: 0,
+  startY: 0,
+  scale: 0.1,
+  mouthStage: 0,
+  pawY: 0
+};
+
+/* ==========================================================================
+   PIXEL ART ASSETS (Procedural Matrix Definitions)
+   True 2D retro pixel art for Cat, Rat, and Props!
+   ========================================================================== */
+// Terrifying 2D Pixelated Cat Matrix (24x22 pixels)
+const PIXEL_CAT_MATRIX = [
+  "   BB              BB   ",
+  "  BEEB            BEEB  ",
+  " BEEFFB          BFFEEB ",
+  " BEEFFFB        BFFFFEEB",
+  " BFFFFFFBBBBBBBBFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFFFFFB",
+  "BFFYYYYYFFFFFFFFYYYYYFFB",
+  "BFYYYYYYYFFFFFFYYYYYYYFB",
+  "BFYYRRRYYFFFFFFYYRRRYYFB",
+  "BFYYRRRYYFFFFFFYYRRRYYFB",
+  "BFFYYYYYFFFFFFFFYYYYYFFB",
+  "BFFFFFFFFFFWWFFFFFFFFFFB",
+  "BFFFFFFFFFRPPRFFFFFFFFFB",
+  "BWWWWWWWWFRPPRFDDDDDDDDB",
+  "BWWWWWWWWFRPPRFDDDDDDDDB",
+  "BFFFFFFFFFFPPFFFFFFFFFFB",
+  "BFFFTTTTTTTTTTTTTTTTFFFB",
+  " BFFFTTTTTTTTTTTTTTFFFB ",
+  "  BFFFFFFFFFFFFFFFFFFB  ",
+  "   BBBBBBBBBBBBBBBBBB   "
+];
+
+const CAT_PALETTE = {
+  'B': '#09050d', // Pitch black pixel border
+  'F': '#1f132b', // Deep sinister purple-black fur
+  'E': '#ff2a6d', // Hot neon pink inner ear
+  'Y': '#ffee00', // Blazing evil yellow eyes
+  'R': '#ff0033', // Slit red pupil
+  'W': '#ffffff', // White fangs & whiskers
+  'P': '#ff6b97', // Pink nose
+  'T': '#f8fafc', // Razor sharp teeth
+  'D': '#ffffff'  // Right whiskers
+};
+
+/* ==========================================================================
+   MAZE GENERATION LOGIC
+   Takeshi's Castle knock-knock door maze:
+   Some doors are real passages; some are fake or deadly wrong doors!
+   ========================================================================== */
+function setupMaze() {
+  rooms = [];
+  gameState = 'PLAYING';
+  attackTimer = 0;
+  screenShake = 0;
+  particles = [];
+  bullets = [];
+  player.bluePortal = null;
+  player.orangePortal = null;
+  player.teleportCooldown = 0;
+
+  // Start bottom-left (0, 2); Cheese top-right (3, 0)
+  const startX = 0;
+  const startY = 2;
+  cheese.cellX = 3;
+  cheese.cellY = 0;
+  cheese.x = GRID_X + cheese.cellX * CELL_W + CELL_W / 2;
+  cheese.y = GRID_Y + cheese.cellY * CELL_H + CELL_H / 2;
+  cheese.collected = false;
+
+  player.x = GRID_X + startX * CELL_W + CELL_W / 2;
+  player.y = GRID_Y + startY * CELL_H + CELL_H / 2;
+
+  // Initialize empty rooms
+  for (let r = 0; r < ROWS; r++) {
+    rooms[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      rooms[r][c] = {
+        col: c,
+        row: r,
+        scuffs: generateFloorScuffs(),
+        doors: {
+          N: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r - 1, targetC: c },
+          S: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r + 1, targetC: c },
+          W: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r, targetC: c - 1 },
+          E: { exists: false, isWrong: false, isOpen: false, openAngle: 0, targetR: r, targetC: c + 1 }
+        }
+      };
+    }
+  }
+
+  // Generate safe path from Start to Cheese
+  const safeDoors = new Set();
+  function addSafeEdge(c1, r1, c2, r2) {
+    safeDoors.add(`${c1},${r1}->${c2},${r2}`);
+    safeDoors.add(`${c2},${r2}->${c1},${r1}`);
+  }
+
+  // 2 alternative path walks to allow exploring
+  for (let path = 0; path < 2; path++) {
+    let curr = { c: startX, r: startY };
+    let safety = 0;
+    while ((curr.c !== cheese.cellX || curr.r !== cheese.cellY) && safety < 30) {
+      safety++;
+      const options = [];
+      if (curr.c < COLS - 1) options.push({ c: curr.c + 1, r: curr.r });
+      if (curr.r > 0) options.push({ c: curr.c, r: curr.r - 1 });
+      if (curr.c > 0 && Math.random() < 0.3) options.push({ c: curr.c - 1, r: curr.r });
+      if (curr.r < ROWS - 1 && Math.random() < 0.3) options.push({ c: curr.c, r: curr.r + 1 });
+      const next = options[Math.floor(Math.random() * options.length)];
+      addSafeEdge(curr.c, curr.r, next.c, next.r);
+      curr = next;
+    }
+    addSafeEdge(curr.c, curr.r, cheese.cellX, cheese.cellY);
+  }
+
+  // Populate doors on all internal walls
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const room = rooms[r][c];
+
+      // East door
+      if (c < COLS - 1) {
+        const isSafe = safeDoors.has(`${c},${r}->${c+1},${r}`);
+        const isWrong = !isSafe && Math.random() < 0.7; // 70% of non-safe doors are deadly wrong doors!
+        room.doors.E.exists = true;
+        room.doors.E.isWrong = isWrong;
+        rooms[r][c+1].doors.W.exists = true;
+        rooms[r][c+1].doors.W.isWrong = isWrong;
+      }
+
+      // South door
+      if (r < ROWS - 1) {
+        const isSafe = safeDoors.has(`${c},${r}->${c},${r+1}`);
+        const isWrong = !isSafe && Math.random() < 0.7;
+        room.doors.S.exists = true;
+        room.doors.S.isWrong = isWrong;
+        rooms[r+1][c].doors.N.exists = true;
+        rooms[r+1][c].doors.N.isWrong = isWrong;
+      }
+    }
+  }
+
+  updateHUD();
+}
+
+function generateFloorScuffs() {
+  const scuffs = [];
+  const n = 6 + Math.floor(Math.random() * 8);
+  for (let i = 0; i < n; i++) {
+    scuffs.push({
+      x: 18 + Math.random() * (CELL_W - 36),
+      y: 18 + Math.random() * (CELL_H - 36),
+      len: 8 + Math.random() * 18,
+      angle: Math.random() * Math.PI * 2,
+      color: Math.random() > 0.4 ? 'rgba(40, 35, 30, 0.28)' : 'rgba(15, 15, 15, 0.22)',
+      width: 1.2 + Math.random() * 1.5
+    });
+  }
+  return scuffs;
+}
+
+function updateHUD() {
+  const curC = Math.floor((player.x - GRID_X) / CELL_W);
+  const curR = Math.floor((player.y - GRID_Y) / CELL_H);
+  const dist = Math.abs(curC - cheese.cellX) + Math.abs(curR - cheese.cellY);
+  const radarEl = document.getElementById('radar-badge');
+  if (radarEl) {
+    if (dist === 0) {
+      radarEl.innerText = `🧀 CHEESE: IN THIS ROOM!`;
+      radarEl.style.color = '#fef08a';
+      radarEl.style.borderColor = '#facc15';
+    } else {
+      radarEl.innerText = `🧀 CHEESE: ${dist} ROOM${dist > 1 ? 'S' : ''} AWAY`;
+      radarEl.style.color = '#facc15';
+      radarEl.style.borderColor = 'rgba(202, 138, 4, 0.5)';
+    }
+  }
+
+  const bBlue = document.getElementById('badge-blue');
+  const bOrange = document.getElementById('badge-orange');
+  if (bBlue) {
+    bBlue.style.opacity = player.bluePortal ? '1' : '0.6';
+    bBlue.innerText = player.bluePortal ? '● BLUE [ACTIVE]' : '○ BLUE [Q/LMB]';
+  }
+  if (bOrange) {
+    bOrange.style.opacity = player.orangePortal ? '1' : '0.6';
+    bOrange.innerText = player.orangePortal ? '● ORANGE [ACTIVE]' : '○ ORANGE [E/RMB]';
+  }
+}
+
+/* ==========================================================================
+   INPUTS & PORTAL FIRING
+   ========================================================================== */
+const keys = {};
+let mousePos = { x: 0, y: 0 };
+
+window.addEventListener('keydown', (e) => {
+  keys[e.key.toLowerCase()] = true;
+  audio.ensureInit();
+
+  if (e.key.toLowerCase() === 'r') restartMaze();
+  if (e.key.toLowerCase() === 'q' || e.key === '1') firePortal('blue');
+  if (e.key.toLowerCase() === 'e' || e.key === '2') firePortal('orange');
+});
+
+window.addEventListener('keyup', (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  mousePos.x = (e.clientX - rect.left) * scaleX;
+  mousePos.y = (e.clientY - rect.top) * scaleY;
+});
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+canvas.addEventListener('mousedown', (e) => {
+  audio.ensureInit();
+  if (gameState === 'GAMEOVER' || gameState === 'VICTORY') {
+    restartMaze();
+    return;
+  }
+  if (gameState !== 'PLAYING') return;
+
+  if (e.button === 0) firePortal('blue');
+  else if (e.button === 2) firePortal('orange');
+});
+
+function firePortal(color) {
+  if (gameState !== 'PLAYING') return;
+  audio.portalFire(color);
+
+  const dx = mousePos.x - player.x;
+  const dy = mousePos.y - player.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const speed = 15;
+
+  bullets.push({
+    x: player.x,
+    y: player.y,
+    vx: (dx / len) * speed,
+    vy: (dy / len) * speed,
+    color: color,
+    life: 90
+  });
+
+  // Muzzle particles
+  for (let i = 0; i < 7; i++) {
+    particles.push({
+      x: player.x,
+      y: player.y,
+      vx: (dx / len) * 3 + (Math.random() - 0.5) * 4,
+      vy: (dy / len) * 3 + (Math.random() - 0.5) * 4,
+      color: color === 'blue' ? '#38bdf8' : '#fb923c',
+      size: 4 + Math.random() * 3,
+      alpha: 1,
+      decay: 0.08
+    });
+  }
+}
+
+function attachPortalToWall(bx, by, color) {
+  const relX = bx - GRID_X;
+  const relY = by - GRID_Y;
+  const col = Math.floor(relX / CELL_W);
+  const row = Math.floor(relY / CELL_H);
+
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+
+  const roomX = GRID_X + col * CELL_W;
+  const roomY = GRID_Y + row * CELL_H;
+  const lx = bx - roomX;
+  const ly = by - roomY;
+
+  const distN = ly;
+  const distS = CELL_H - ly;
+  const distW = lx;
+  const distE = CELL_W - lx;
+  const minDist = Math.min(distN, distS, distW, distE);
+
+  let wall = 'N';
+  let px = bx, py = roomY + WALL_THICK, nx = 0, ny = 1;
+
+  if (minDist === distS) {
+    wall = 'S';
+    px = bx;
+    py = roomY + CELL_H - WALL_THICK;
+    nx = 0; ny = -1;
+  } else if (minDist === distW) {
+    wall = 'W';
+    px = roomX + WALL_THICK;
+    py = by;
+    nx = 1; ny = 0;
+  } else if (minDist === distE) {
+    wall = 'E';
+    px = roomX + CELL_W - WALL_THICK;
+    py = by;
+    nx = -1; ny = 0;
+  }
+
+  const portalObj = {
+    cellX: col,
+    cellY: row,
+    wall: wall,
+    x: px,
+    y: py,
+    nx: nx,
+    ny: ny,
+    color: color,
+    pulse: 0
+  };
+
+  if (color === 'blue') player.bluePortal = portalObj;
+  else player.orangePortal = portalObj;
+
+  updateHUD();
+
+  // Portal placement spark burst
+  for (let i = 0; i < 18; i++) {
+    particles.push({
+      x: px,
+      y: py,
+      vx: nx * 3.5 + (Math.random() - 0.5) * 6,
+      vy: ny * 3.5 + (Math.random() - 0.5) * 6,
+      color: color === 'blue' ? '#38bdf8' : '#fb923c',
+      size: 5 + Math.random() * 4,
+      alpha: 1,
+      decay: 0.05
+    });
+  }
+}
+
+/* ==========================================================================
+   GAME UPDATE & WRONG DOOR TRIGGER
+   ========================================================================== */
+function triggerCatJumpscare(door, col, row, dir) {
+  gameState = 'CAT_ATTACK';
+  attackTimer = 0;
+  deathDoorInfo = { door, col, row, dir };
+  audio.catJumpScare();
+
+  const rx = GRID_X + col * CELL_W;
+  const ry = GRID_Y + row * CELL_H;
+  let spawnX = rx + CELL_W / 2;
+  let spawnY = ry + CELL_H / 2;
+
+  if (dir === 'N') spawnY = ry;
+  else if (dir === 'S') spawnY = ry + CELL_H;
+  else if (dir === 'W') spawnX = rx;
+  else if (dir === 'E') spawnX = rx + CELL_W;
+
+  catAttack.startX = spawnX;
+  catAttack.startY = spawnY;
+  catAttack.x = spawnX;
+  catAttack.y = spawnY;
+  catAttack.scale = 0.25;
+  catAttack.mouthStage = 0;
+  catAttack.pawY = 0;
+
+  screenShake = 16;
+}
+
+function updateGame(dt) {
+  // Shake decay
+  if (screenShake > 0) {
+    screenShake = Math.max(0, screenShake - dt * 26);
+  }
+
+  // Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.alpha -= p.decay;
+    if (p.alpha <= 0) particles.splice(i, 1);
+  }
+
+  // --- CAT ATTACK CINEMATIC SEQUENCE ---
+  if (gameState === 'CAT_ATTACK') {
+    attackTimer += dt;
+    screenShake = Math.min(22, screenShake + 1.5);
+
+    // 0.0s - 0.25s: Door shatters open
+    if (attackTimer < 0.25) {
+      if (deathDoorInfo && deathDoorInfo.door) {
+        deathDoorInfo.door.isOpen = true;
+        deathDoorInfo.door.openAngle = Math.min(1.5, deathDoorInfo.door.openAngle + dt * 8);
+      }
+      catAttack.x = catAttack.startX;
+      catAttack.y = catAttack.startY;
+      catAttack.scale = 0.3 + attackTimer * 1.8;
+    }
+    // 0.25s - 0.75s: 2D Pixelated Cat lunges from door directly at the rat!
+    else if (attackTimer < 0.75) {
+      const progress = (attackTimer - 0.25) / 0.5;
+      const ease = progress * progress; // violent acceleration
+      catAttack.x = catAttack.startX + (player.x - catAttack.startX) * ease;
+      catAttack.y = catAttack.startY + (player.y - catAttack.startY) * ease;
+      catAttack.scale = 0.8 + ease * 1.9;
+      catAttack.mouthStage = progress > 0.45 ? 1 : 0;
+      catAttack.pawY = ease;
+    }
+    // 0.75s - 1.35s: CHOMP! Jaws snap shut, swallowing the rat!
+    else if (attackTimer < 1.35) {
+      catAttack.x = player.x;
+      catAttack.y = player.y;
+      catAttack.mouthStage = 2; // Full chomp
+      catAttack.scale = 2.7;
+
+      // Blood / pixel spark splatters
+      if (Math.random() < 0.6) {
+        particles.push({
+          x: player.x + (Math.random() - 0.5) * 50,
+          y: player.y + (Math.random() - 0.5) * 50,
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 0.5) * 10,
+          color: Math.random() > 0.3 ? '#ff0033' : '#ffee00',
+          size: 6 + Math.random() * 6,
+          alpha: 1,
+          decay: 0.035
+        });
+      }
+    }
+    // 1.35s+: Trigger Game Over Screen
+    else {
+      gameState = 'GAMEOVER';
+    }
+    return;
+  }
+
+  if (gameState !== 'PLAYING') return;
+
+  if (player.teleportCooldown > 0) {
+    player.teleportCooldown -= dt;
+  }
+
+  // Update Portal Bullets
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.x += b.vx;
+    b.y += b.vy;
+    b.life--;
+
+    particles.push({
+      x: b.x,
+      y: b.y,
+      vx: (Math.random() - 0.5) * 1.5,
+      vy: (Math.random() - 0.5) * 1.5,
+      color: b.color === 'blue' ? '#38bdf8' : '#fb923c',
+      size: 3,
+      alpha: 0.7,
+      decay: 0.08
+    });
+
+    let collided = false;
+    // Outer boundary collision
+    if (b.x <= GRID_X + WALL_THICK || b.x >= GRID_X + GRID_W - WALL_THICK ||
+        b.y <= GRID_Y + WALL_THICK || b.y >= GRID_Y + GRID_H - WALL_THICK) {
+      collided = true;
+    }
+
+    // Grid cell wall collision
+    const c = Math.floor((b.x - GRID_X) / CELL_W);
+    const r = Math.floor((b.y - GRID_Y) / CELL_H);
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) {
+      const rx = GRID_X + c * CELL_W;
+      const ry = GRID_Y + r * CELL_H;
+      const lx = b.x - rx;
+      const ly = b.y - ry;
+      if (lx < WALL_THICK || lx > CELL_W - WALL_THICK || ly < WALL_THICK || ly > CELL_H - WALL_THICK) {
+        collided = true;
+      }
+    }
+
+    if (collided || b.life <= 0) {
+      attachPortalToWall(b.x, b.y, b.color);
+      bullets.splice(i, 1);
+    }
+  }
+
+  // Rat Movement
+  let mx = 0, my = 0;
+  if (keys['w'] || keys['arrowup']) my -= 1;
+  if (keys['s'] || keys['arrowdown']) my += 1;
+  if (keys['a'] || keys['arrowleft']) mx -= 1;
+  if (keys['d'] || keys['arrowright']) mx += 1;
+
+  if (mx !== 0 || my !== 0) {
+    const len = Math.hypot(mx, my);
+    mx = (mx / len) * player.speed;
+    my = (my / len) * player.speed;
+    player.moving = true;
+    player.walkCycle += dt * 11;
+    if (Math.floor(player.walkCycle) % 3 === 0 && Math.random() < 0.25) {
+      audio.footstep();
+    }
+  } else {
+    player.moving = false;
+  }
+
+  processRatMovement(mx, my);
+
+  // Check Cheese Grab
+  const dCheese = Math.hypot(player.x - cheese.x, player.y - cheese.y);
+  if (!cheese.collected && dCheese < player.radius + 18) {
+    cheese.collected = true;
+    gameState = 'VICTORY';
+    audio.victoryFanfare();
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: cheese.x,
+        y: cheese.y,
+        vx: (Math.random() - 0.5) * 14,
+        vy: (Math.random() - 0.5) * 14,
+        color: ['#ffd700', '#38bdf8', '#fb923c', '#4ade80', '#ffffff'][Math.floor(Math.random() * 5)],
+        size: 5 + Math.random() * 5,
+        alpha: 1,
+        decay: 0.015
+      });
+    }
+  }
+
+  // Portal Teleportation
+  if (player.teleportCooldown <= 0 && player.bluePortal && player.orangePortal) {
+    const dBlue = Math.hypot(player.x - player.bluePortal.x, player.y - player.bluePortal.y);
+    const dOrange = Math.hypot(player.x - player.orangePortal.x, player.y - player.orangePortal.y);
+
+    if (dBlue < 22) {
+      player.x = player.orangePortal.x + player.orangePortal.nx * 28;
+      player.y = player.orangePortal.y + player.orangePortal.ny * 28;
+      player.teleportCooldown = 0.6;
+      audio.portalTeleport();
+      spawnPortalTeleportSparks(player.x, player.y, '#fb923c');
+      updateHUD();
+    } else if (dOrange < 22) {
+      player.x = player.bluePortal.x + player.bluePortal.nx * 28;
+      player.y = player.bluePortal.y + player.bluePortal.ny * 28;
+      player.teleportCooldown = 0.6;
+      audio.portalTeleport();
+      spawnPortalTeleportSparks(player.x, player.y, '#38bdf8');
+      updateHUD();
+    }
+  }
+}
+
+function spawnPortalTeleportSparks(x, y, color) {
+  for (let i = 0; i < 22; i++) {
+    particles.push({
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      color: color,
+      size: 4 + Math.random() * 4,
+      alpha: 1,
+      decay: 0.045
+    });
+  }
+}
+
+function processRatMovement(dx, dy) {
+  const nextX = player.x + dx;
+  const nextY = player.y + dy;
+
+  const minX = GRID_X + WALL_THICK + player.radius;
+  const maxX = GRID_X + GRID_W - WALL_THICK - player.radius;
+  const minY = GRID_Y + WALL_THICK + player.radius;
+  const maxY = GRID_Y + GRID_H - WALL_THICK - player.radius;
+
+  const c = Math.floor((player.x - GRID_X) / CELL_W);
+  const r = Math.floor((player.y - GRID_Y) / CELL_H);
+
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) {
+    player.x = Math.max(minX, Math.min(maxX, nextX));
+    player.y = Math.max(minY, Math.min(maxY, nextY));
+    return;
+  }
+
+  const room = rooms[r][c];
+  const roomL = GRID_X + c * CELL_W;
+  const roomR = roomL + CELL_W;
+  const roomT = GRID_Y + r * CELL_H;
+  const roomB = roomT + CELL_H;
+
+  let canMoveX = true;
+  let canMoveY = true;
+
+  // Collision & Door Check: East / West
+  if (nextX > roomR - WALL_THICK - player.radius) {
+    if (room.doors.E.exists) {
+      const centerY = roomT + CELL_H / 2;
+      if (Math.abs(player.y - centerY) < (DOOR_W / 2)) {
+        tryOpenDoor(room.doors.E, c, r, 'E');
+        if (!room.doors.E.isOpen && !room.doors.E.isWrong) canMoveX = false;
+      } else canMoveX = false;
+    } else canMoveX = false;
+  } else if (nextX < roomL + WALL_THICK + player.radius) {
+    if (room.doors.W.exists) {
+      const centerY = roomT + CELL_H / 2;
+      if (Math.abs(player.y - centerY) < (DOOR_W / 2)) {
+        tryOpenDoor(room.doors.W, c, r, 'W');
+        if (!room.doors.W.isOpen && !room.doors.W.isWrong) canMoveX = false;
+      } else canMoveX = false;
+    } else canMoveX = false;
+  }
+
+  // Collision & Door Check: North / South
+  if (nextY < roomT + WALL_THICK + player.radius) {
+    if (room.doors.N.exists) {
+      const centerX = roomL + CELL_W / 2;
+      if (Math.abs(player.x - centerX) < (DOOR_W / 2)) {
+        tryOpenDoor(room.doors.N, c, r, 'N');
+        if (!room.doors.N.isOpen && !room.doors.N.isWrong) canMoveY = false;
+      } else canMoveY = false;
+    } else canMoveY = false;
+  } else if (nextY > roomB - WALL_THICK - player.radius) {
+    if (room.doors.S.exists) {
+      const centerX = roomL + CELL_W / 2;
+      if (Math.abs(player.x - centerX) < (DOOR_W / 2)) {
+        tryOpenDoor(room.doors.S, c, r, 'S');
+        if (!room.doors.S.isOpen && !room.doors.S.isWrong) canMoveY = false;
+      } else canMoveY = false;
+    } else canMoveY = false;
+  }
+
+  if (canMoveX) player.x = Math.max(minX, Math.min(maxX, nextX));
+  if (canMoveY) player.y = Math.max(minY, Math.min(maxY, nextY));
+
+  updateHUD();
+}
+
+function tryOpenDoor(door, c, r, dir) {
+  if (door.isOpen) return;
+
+  if (door.isWrong) {
+    // WRONG DOOR TRIGGER! 2D Pixelated Cat pops out!
+    triggerCatJumpscare(door, c, r, dir);
+  } else {
+    // Safe door: Opens on hinges
+    door.isOpen = true;
+    door.openAngle = 1.35;
+    audio.doorOpen();
+
+    // Mirror door state
+    if (dir === 'E' && c < COLS - 1) rooms[r][c + 1].doors.W.isOpen = true;
+    if (dir === 'W' && c > 0) rooms[r][c - 1].doors.E.isOpen = true;
+    if (dir === 'S' && r < ROWS - 1) rooms[r + 1][c].doors.N.isOpen = true;
+    if (dir === 'N' && r > 0) rooms[r - 1][c].doors.S.isOpen = true;
+
+    // Wood dust puffs
+    for (let i = 0; i < 9; i++) {
+      particles.push({
+        x: player.x + (Math.random() - 0.5) * 20,
+        y: player.y + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.5) * 3,
+        vy: (Math.random() - 0.5) * 3,
+        color: '#edd892',
+        size: 3,
+        alpha: 0.8,
+        decay: 0.04
+      });
+    }
+  }
+}
+
+/* ==========================================================================
+   RENDER PIPELINE
+   ========================================================================= */
+function render() {
+  ctx.save();
+
+  if (screenShake > 0) {
+    const rx = (Math.random() - 0.5) * screenShake;
+    const ry = (Math.random() - 0.5) * screenShake;
+    ctx.translate(rx, ry);
+  }
+
+  // Dark studio backdrop
+  ctx.fillStyle = '#0f141d';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 1. Concrete floor chambers & doors
+  renderRoomsAndDoors();
+
+  // 2. Active Portals
+  renderPortals();
+
+  // 3. Golden Cheese
+  renderCheese();
+
+  // 4. Portal Bullets
+  renderBullets();
+
+  // 5. Rat with Portal Gun
+  if (gameState !== 'CAT_ATTACK' || attackTimer < 0.85) {
+    renderRat();
+  }
+
+  // 6. Particles
+  renderParticles();
+
+  // 7. Overhead Wooden Grid Beams (Japanese Game Show Set structure)
+  renderWoodenBeams();
+
+  // 8. 2D Pixelated Cat Attack (Jump-scare sequence)
+  if (gameState === 'CAT_ATTACK') {
+    renderPixelatedCat();
+  }
+
+  // 9. Retro Game Over Screen
+  if (gameState === 'GAMEOVER') {
+    renderGameOver();
+  }
+
+  // 10. Victory Screen
+  if (gameState === 'VICTORY') {
+    renderVictory();
+  }
+
+  ctx.restore();
+}
+
+function renderRoomsAndDoors() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const room = rooms[r][c];
+      const rx = GRID_X + c * CELL_W;
+      const ry = GRID_Y + r * CELL_H;
+
+      // Realistic Takeshi's Castle scuffed concrete floor
+      const grad = ctx.createLinearGradient(rx, ry, rx + CELL_W, ry + CELL_H);
+      grad.addColorStop(0, '#9eaba2');
+      grad.addColorStop(0.5, '#b0bcb4');
+      grad.addColorStop(1, '#94a198');
+      ctx.fillStyle = grad;
+      ctx.fillRect(rx, ry, CELL_W, CELL_H);
+
+      // Floor panel joints
+      ctx.strokeStyle = 'rgba(60, 70, 65, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(rx + CELL_W / 2, ry);
+      ctx.lineTo(rx + CELL_W / 2, ry + CELL_H);
+      ctx.moveTo(rx, ry + CELL_H / 2);
+      ctx.lineTo(rx + CELL_W, ry + CELL_H / 2);
+      ctx.stroke();
+
+      // Scuff marks / fallen debris
+      for (const scuff of room.scuffs) {
+        ctx.save();
+        ctx.translate(rx + scuff.x, ry + scuff.y);
+        ctx.rotate(scuff.angle);
+        ctx.strokeStyle = scuff.color;
+        ctx.lineWidth = scuff.width;
+        ctx.beginPath();
+        ctx.moveTo(-scuff.len / 2, 0);
+        ctx.lineTo(scuff.len / 2, 0);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Room Walls (inner white/cream drywall)
+      ctx.fillStyle = '#dde2dc';
+      ctx.fillRect(rx, ry, CELL_W, WALL_THICK);
+      ctx.fillRect(rx, ry + CELL_H - WALL_THICK, CELL_W, WALL_THICK);
+      ctx.fillRect(rx, ry, WALL_THICK, CELL_H);
+      ctx.fillRect(rx + CELL_W - WALL_THICK, ry, WALL_THICK, CELL_H);
+
+      // Inner wall drop shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+      ctx.fillRect(rx + WALL_THICK, ry + WALL_THICK, CELL_W - WALL_THICK * 2, 9);
+      ctx.fillRect(rx + WALL_THICK, ry + WALL_THICK, 9, CELL_H - WALL_THICK * 2);
+
+      // Draw Doors with iconic 'X' diagonal braces!
+      renderDoors(room, rx, ry);
+    }
+  }
+}
+
+function renderDoors(room, rx, ry) {
+  function drawDoor(x, y, w, h, isVertical, isOpen, angle) {
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+    if (isOpen) ctx.rotate(angle || 1.3);
+
+    // Cream / Yellow door surface
+    ctx.fillStyle = '#f3dfa2';
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.strokeStyle = '#8d6820';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-w / 2, -h / 2, w, h);
+
+    // Inner panel
+    ctx.fillStyle = '#faecc6';
+    ctx.fillRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4);
+
+    // The iconic Takeshi's Castle 'X' diagonal cross braces!
+    ctx.strokeStyle = '#a27824';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 2, -h / 2 + 2);
+    ctx.lineTo(w / 2 - 2, h / 2 - 2);
+    ctx.moveTo(w / 2 - 2, -h / 2 + 2);
+    ctx.lineTo(-w / 2 + 2, h / 2 - 2);
+    ctx.stroke();
+
+    // Hinge indicator
+    ctx.fillStyle = '#3e2723';
+    ctx.fillRect(-w / 2, -h / 2, 3, 3);
+
+    ctx.restore();
+  }
+
+  // North Door
+  if (room.doors.N.exists) {
+    drawDoor(rx + CELL_W / 2 - DOOR_W / 2, ry, DOOR_W, DOOR_H, false, room.doors.N.isOpen, room.doors.N.openAngle);
+  }
+  // South Door
+  if (room.doors.S.exists) {
+    drawDoor(rx + CELL_W / 2 - DOOR_W / 2, ry + CELL_H - DOOR_H, DOOR_W, DOOR_H, false, room.doors.S.isOpen, -room.doors.S.openAngle);
+  }
+  // West Door
+  if (room.doors.W.exists) {
+    drawDoor(rx, ry + CELL_H / 2 - DOOR_W / 2, DOOR_H, DOOR_W, true, room.doors.W.isOpen, room.doors.W.openAngle);
+  }
+  // East Door
+  if (room.doors.E.exists) {
+    drawDoor(rx + CELL_W - DOOR_H, ry + CELL_H / 2 - DOOR_W / 2, DOOR_H, DOOR_W, true, room.doors.E.isOpen, -room.doors.E.openAngle);
+  }
+}
+
+function renderWoodenBeams() {
+  ctx.save();
+  const bw = BEAM_W;
+
+  // Drop shadows cast by top beams
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+  for (let c = 0; c <= COLS; c++) {
+    const bx = GRID_X + c * CELL_W - bw / 2;
+    ctx.fillRect(bx + 5, GRID_Y, 8, GRID_H);
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    const by = GRID_Y + r * CELL_H - bw / 2;
+    ctx.fillRect(GRID_X, by + 5, GRID_W, 8);
+  }
+
+  // Vertical wooden beams
+  for (let c = 0; c <= COLS; c++) {
+    const bx = GRID_X + c * CELL_W - bw / 2;
+    ctx.fillStyle = '#e5b066';
+    ctx.fillRect(bx, GRID_Y - 4, bw, GRID_H + 8);
+    // Bevel highlights
+    ctx.fillStyle = '#fed7aa';
+    ctx.fillRect(bx, GRID_Y - 4, 3, GRID_H + 8);
+    ctx.fillStyle = '#a16207';
+    ctx.fillRect(bx + bw - 3, GRID_Y - 4, 3, GRID_H + 8);
+  }
+
+  // Horizontal wooden beams
+  for (let r = 0; r <= ROWS; r++) {
+    const by = GRID_Y + r * CELL_H - bw / 2;
+    ctx.fillStyle = '#e5b066';
+    ctx.fillRect(GRID_X - 4, by, GRID_W + 8, bw);
+    // Bevel highlights
+    ctx.fillStyle = '#fed7aa';
+    ctx.fillRect(GRID_X - 4, by, GRID_W + 8, 3);
+    ctx.fillStyle = '#a16207';
+    ctx.fillRect(GRID_X - 4, by + bw - 3, GRID_W + 8, 3);
+  }
+
+  // Joint plates & bolts
+  for (let r = 0; r <= ROWS; r++) {
+    for (let c = 0; c <= COLS; c++) {
+      const jx = GRID_X + c * CELL_W - bw / 2;
+      const jy = GRID_Y + r * CELL_H - bw / 2;
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(jx - 2, jy - 2, bw + 4, bw + 4);
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(jx - 2, jy - 2, bw + 4, bw + 4);
+      // Screw
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(jx + bw / 2 - 2, jy + bw / 2 - 2, 4, 4);
+    }
+  }
+
+  ctx.restore();
+}
+
+function renderPortals() {
+  [player.bluePortal, player.orangePortal].forEach((p) => {
+    if (!p) return;
+    p.pulse = (p.pulse || 0) + 0.08;
+    const isBlue = p.color === 'blue';
+    const mainCol = isBlue ? '#00b4d8' : '#fb8500';
+    const coreCol = isBlue ? '#caf0f8' : '#ffedd5';
+    const glowCol = isBlue ? 'rgba(0, 180, 216, 0.55)' : 'rgba(251, 133, 0, 0.55)';
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    const isH = p.wall === 'N' || p.wall === 'S';
+    const pulse = 1 + Math.sin(p.pulse) * 0.12;
+
+    // Glowing halo
+    const halo = ctx.createRadialGradient(0, 0, 6, 0, 0, 26 * pulse);
+    halo.addColorStop(0, glowCol);
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(0, 0, 26 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Portal Ring
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = mainCol;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    if (isH) ctx.ellipse(0, 0, 23 * pulse, 8 * pulse, 0, 0, Math.PI * 2);
+    else ctx.ellipse(0, 0, 8 * pulse, 23 * pulse, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Energy Core
+    ctx.fillStyle = coreCol;
+    ctx.beginPath();
+    if (isH) ctx.ellipse(0, 0, 14 * pulse, 4 * pulse, 0, 0, Math.PI * 2);
+    else ctx.ellipse(0, 0, 4 * pulse, 14 * pulse, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+function renderBullets() {
+  for (const b of bullets) {
+    ctx.save();
+    ctx.fillStyle = b.color === 'blue' ? '#38bdf8' : '#fb923c';
+    ctx.shadowColor = b.color === 'blue' ? '#0284c7' : '#ea580c';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function renderCheese() {
+  if (cheese.collected) return;
+  cheese.glow = (cheese.glow || 0) + 0.05;
+  const float = Math.sin(cheese.glow) * 3;
+
+  ctx.save();
+  ctx.translate(cheese.x, cheese.y + float);
+
+  // Golden glow
+  const aura = ctx.createRadialGradient(0, 0, 5, 0, 0, 30);
+  aura.addColorStop(0, 'rgba(250, 204, 21, 0.85)');
+  aura.addColorStop(1, 'rgba(250, 204, 21, 0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cheese Wedge
+  ctx.fillStyle = '#f59e0b';
+  ctx.strokeStyle = '#b45309';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-16, 12);
+  ctx.lineTo(16, 12);
+  ctx.lineTo(0, -18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Cheese holes
+  ctx.fillStyle = '#d97706';
+  ctx.beginPath();
+  ctx.arc(-4, 5, 3, 0, Math.PI * 2);
+  ctx.arc(6, 6, 2.5, 0, Math.PI * 2);
+  ctx.arc(1, -4, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function renderRat() {
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  const aimAngle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
+
+  // Drop Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+  ctx.beginPath();
+  ctx.ellipse(0, player.radius - 2, player.radius + 3, player.radius / 2 + 1, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Animated Tail
+  const tailSway = Math.sin(player.walkCycle * 2) * 5;
+  ctx.strokeStyle = '#f472b6';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-player.radius + 4, 3);
+  ctx.quadraticCurveTo(-player.radius - 9, 8 + tailSway, -player.radius - 18, 3 + tailSway);
+  ctx.stroke();
+
+  // Rat Body
+  ctx.fillStyle = '#64748b';
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, player.radius, player.radius - 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Pink Ears
+  ctx.fillStyle = '#f472b6';
+  ctx.beginPath();
+  ctx.arc(-8, -12, 6, 0, Math.PI * 2);
+  ctx.arc(8, -12, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Rat Head
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath();
+  ctx.arc(0, -5, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Pink Nose
+  ctx.fillStyle = '#fb7185';
+  ctx.beginPath();
+  ctx.arc(0, -9, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Beady Black Eyes
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(-4, -6, 2, 0, Math.PI * 2);
+  ctx.arc(4, -6, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Whiskers
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-5, -6); ctx.lineTo(-14, -8);
+  ctx.moveTo(-5, -5); ctx.lineTo(-13, -3);
+  ctx.moveTo(5, -6); ctx.lineTo(14, -8);
+  ctx.moveTo(5, -5); ctx.lineTo(13, -3);
+  ctx.stroke();
+
+  // PORTAL GUN Device in hands (aimed at mouse)
+  ctx.save();
+  ctx.rotate(aimAngle);
+
+  // Gun Body (white shell)
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(4, -4, 18, 8, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  // Handle & Grip
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(2, -2, 4, 4);
+
+  // Glowing portal power core
+  ctx.fillStyle = '#38bdf8';
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 8;
+  ctx.fillRect(8, -2.5, 6, 5);
+  ctx.shadowBlur = 0;
+
+  // Front Aperture Prongs
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(22, -4); ctx.lineTo(26, -5);
+  ctx.moveTo(22, 4); ctx.lineTo(26, 5);
+  ctx.stroke();
+
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function renderParticles() {
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.alpha);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    ctx.restore();
+  }
+}
+
+/* ==========================================================================
+   2D PIXELATED CAT JUMP-SCARE & EATING ANIMATION
+   ========================================================================== */
+function renderPixelatedCat() {
+  ctx.save();
+  const c = catAttack;
+
+  ctx.translate(c.x, c.y);
+  ctx.scale(c.scale, c.scale);
+
+  // Ominous blood-red shadow aura
+  const aura = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
+  aura.addColorStop(0, 'rgba(255, 0, 68, 0.85)');
+  aura.addColorStop(0.5, 'rgba(40, 0, 50, 0.9)');
+  aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, 110, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Render 2D Pixelated Cat Head from Matrix
+  const pxSize = 4.5;
+  const startPx = -(PIXEL_CAT_MATRIX[0].length * pxSize) / 2;
+  const startPy = -(PIXEL_CAT_MATRIX.length * pxSize) / 2;
+
+  for (let row = 0; row < PIXEL_CAT_MATRIX.length; row++) {
+    const line = PIXEL_CAT_MATRIX[row];
+    for (let col = 0; col < line.length; col++) {
+      const code = line[col];
+      if (code !== ' ' && CAT_PALETTE[code]) {
+        ctx.fillStyle = CAT_PALETTE[code];
+        ctx.fillRect(startPx + col * pxSize, startPy + row * pxSize, pxSize, pxSize);
+      }
+    }
+  }
+
+  // Mouth Stage (Wide Gaping Jaws for Eating Rat)
+  if (c.mouthStage >= 1) {
+    const mW = 52;
+    const mH = c.mouthStage === 2 ? 62 : 36;
+    ctx.fillStyle = '#660018';
+    ctx.fillRect(-mW / 2, 8, mW, mH);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-mW / 2, 8, mW, mH);
+
+    // Giant sharp top & bottom pixel fangs
+    ctx.fillStyle = '#ffffff';
+    // Top Fangs
+    ctx.beginPath();
+    ctx.moveTo(-20, 8); ctx.lineTo(-14, 25); ctx.lineTo(-8, 8);
+    ctx.moveTo(8, 8); ctx.lineTo(14, 25); ctx.lineTo(20, 8);
+    ctx.fill();
+
+    // Bottom Fangs
+    ctx.beginPath();
+    ctx.moveTo(-18, 8 + mH); ctx.lineTo(-12, 8 + mH - 18); ctx.lineTo(-6, 8 + mH);
+    ctx.moveTo(6, 8 + mH); ctx.lineTo(12, 8 + mH - 18); ctx.lineTo(18, 8 + mH);
+    ctx.fill();
+  }
+
+  // Giant pixel paws slamming forward with sharp claws
+  if (c.pawY > 0) {
+    const py = 26 + c.pawY * 18;
+    ctx.fillStyle = '#170c24';
+    // Left Paw
+    ctx.fillRect(-72, py, 36, 28);
+    // Right Paw
+    ctx.fillRect(36, py, 36, 28);
+
+    // Claws
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(-68 + i * 11, py + 24, 7, 13);
+      ctx.fillRect(40 + i * 11, py + 24, 7, 13);
+    }
+  }
+
+  // Massive Comic Balloon "CHOMP!"
+  if (c.mouthStage === 2) {
+    ctx.font = '900 32px ui-monospace, monospace';
+    ctx.fillStyle = '#ffea00';
+    ctx.strokeStyle = '#b71c1c';
+    ctx.lineWidth = 7;
+    ctx.strokeText("CHOMP!!", -60, -52);
+    ctx.fillText("CHOMP!!", -60, -52);
+  }
+
+  ctx.restore();
+}
+
+/* ==========================================================================
+   GAME OVER & VICTORY SCREENS
+   ========================================================================== */
+function renderGameOver() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(15, 2, 5, 0.92)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // CRT Scanlines
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  for (let y = 0; y < canvas.height; y += 4) {
+    ctx.fillRect(0, y, canvas.width, 2);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.font = '900 68px ui-monospace, monospace';
+  ctx.fillStyle = '#ff1744';
+  ctx.shadowColor = '#d50000';
+  ctx.shadowBlur = 28;
+  ctx.fillText("GAME OVER", canvas.width / 2, 220);
+  ctx.shadowBlur = 0;
+
+  ctx.font = '700 22px ui-monospace, monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText("🐱 WRONG DOOR! THE GIANT 2D PIXEL CAT ATE YOU!", canvas.width / 2, 290);
+
+  ctx.font = '16px ui-monospace, monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText("In Takeshi's door maze, bad doors hold terrifying predators.", canvas.width / 2, 335);
+  ctx.fillText("Strategy: Use your Portal Gun to scout rooms or bypass doors!", canvas.width / 2, 365);
+
+  // Try Again Button
+  const by = 440;
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(canvas.width / 2 - 140, by, 280, 52);
+  ctx.strokeStyle = '#f87171';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(canvas.width / 2 - 140, by, 280, 52);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px ui-monospace, monospace';
+  ctx.fillText("TRY AGAIN (R / CLICK)", canvas.width / 2, by + 34);
+
+  ctx.restore();
+}
+
+function renderVictory() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(8, 28, 18, 0.92)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Scanlines
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  for (let y = 0; y < canvas.height; y += 4) {
+    ctx.fillRect(0, y, canvas.width, 2);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.font = '900 64px ui-monospace, monospace';
+  ctx.fillStyle = '#fbbf24';
+  ctx.shadowColor = '#f59e0b';
+  ctx.shadowBlur = 28;
+  ctx.fillText("VICTORY!", canvas.width / 2, 220);
+  ctx.shadowBlur = 0;
+
+  ctx.font = '700 24px ui-monospace, monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText("🧀 PORTAL RAT ESCAPED WITH THE CHEESE!", canvas.width / 2, 290);
+
+  ctx.font = '16px ui-monospace, monospace';
+  ctx.fillStyle = '#a7f3d0';
+  ctx.fillText("You successfully navigated the deadly Takeshi Knock-Knock maze!", canvas.width / 2, 335);
+  ctx.fillText("All 2D cats left hungry and disappointed.", canvas.width / 2, 365);
+
+  const by = 440;
+  ctx.fillStyle = '#059669';
+  ctx.fillRect(canvas.width / 2 - 140, by, 280, 52);
+  ctx.strokeStyle = '#34d399';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(canvas.width / 2 - 140, by, 280, 52);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px ui-monospace, monospace';
+  ctx.fillText("PLAY AGAIN (R / CLICK)", canvas.width / 2, by + 34);
+
+  ctx.restore();
+}
+
+function restartMaze() {
+  setupMaze();
+}
+
+function generateNewRandomMaze() {
+  setupMaze();
+}
+
+/* ==========================================================================
+   MAIN TICK / LOOP
+   ========================================================================== */
+let prevTime = performance.now();
+function gameLoop(now) {
+  const dt = Math.min((now - prevTime) / 1000, 0.1);
+  prevTime = now;
+
+  updateGame(dt);
+  render();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Initial Boot
+setupMaze();
+requestAnimationFrame((t) => {
+  prevTime = t;
+  gameLoop(t);
+});
+</script>
+</body>
+</html>
