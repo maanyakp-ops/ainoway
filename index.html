@@ -1398,6 +1398,12 @@ const LEVELS = [{
   start: [0, 7], exit: [7, 0], barrel: [3, 4], eagle: [6, 2],
   openTime: 1.0, tpRange: 2, chaseDist: 650,
   allDoors: true
+}, {
+  type: 'lava', name: 'THE LAVA CANYON',
+  goal: 'Cross the lava with the gun, grab 5 cheese, reach the exit!',
+  cols: 8, rows: 8, wall: 8, door: [54, 12], beam: 14, rad: 12, speed: 200, sc: {rat: 1.0, cat: 2.0, eagle: 1.5},
+  start: [0, 7], exit: [7, 0], barrel: [6, 4], eagle: [1, 2],
+  tpRange: 3, chaseDist: 650, allDoors: true, lava: [3, 4], fly: true, gunStart: true, cheeseCount: 12, cheeseNeed: 5
 }];
 
 // ---------- state ----------
@@ -1410,6 +1416,7 @@ const eagle = {x: 0, y: 0, state: 'PATROL', chase: 0, cool: 0, wait: 0, target: 
 const ping = {t: 0, flash: 0, last: [0, 0], count: 0};
 const gnaw = {p: 0, near: false};
 const barrel = {x: 0, y: 0, p: 0, near: false, opened: false};
+let cheese = [], cheeseGot = 0;
 let grace = 0, atk = null, shake = 0, particles = [], time = 0, clearT = 0, msgT = 0, msg = '';
 const keys = {};
 let mouse = {x: 0, y: 0};
@@ -1431,7 +1438,7 @@ function loadLevel(i) {
   COLS = L.cols; ROWS = L.rows; CELL_W = GRID_W / COLS; CELL_H = GRID_H / ROWS;
   WALL = L.wall; DOOR_W = L.door[0]; DOOR_H = L.door[1]; BEAM_W = L.beam; RAD = L.rad; SPEED = L.speed; SC = L.sc;
   doors = {};
-  if (L.allDoors) { for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { if (c < COLS - 1) doors[c + ',' + r + 'E'] = {kind: 'S', open: false, angle: 0}; if (r < ROWS - 1) doors[c + ',' + r + 'S'] = {kind: 'S', open: false, angle: 0}; } }
+  if (L.allDoors) { const lv = c => L.lava && L.lava.includes(c); for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { if (lv(c)) continue; if (c < COLS - 1 && !lv(c + 1)) doors[c + ',' + r + 'E'] = {kind: 'S', open: false, angle: 0}; if (r < ROWS - 1) doors[c + ',' + r + 'S'] = {kind: 'S', open: false, angle: 0}; } }
   else for (const k in L.doors) doors[k] = {key: k, kind: L.doors[k], open: false, angle: 0};
   scuffs = [];
   for (let r = 0; r < ROWS; r++) { scuffs[r] = []; for (let c = 0; c < COLS; c++) {
@@ -1439,7 +1446,7 @@ function loadLevel(i) {
     const rn = () => (s = (s * 9301 + 49297) % 233280) / 233280;
     for (let n = 0; n < (L.cols > 5 ? 4 : 9); n++) a.push({x: 14 + rn() * (CELL_W - 28), y: 14 + rn() * (CELL_H - 28), len: 8 + rn() * 18, ang: rn() * 6.28, dark: rn() > .4, w: 1.2 + rn() * 1.2});
     scuffs[r][c] = a; } }
-  const s = rc(L.start[0], L.start[1]); rat.x = s.x; rat.y = s.y; rat.walk = 0; rat.face = 1; rat.moving = false; rat.gun = false; rat.tpCool = 0;
+  const s = rc(L.start[0], L.start[1]); rat.x = s.x; rat.y = s.y; rat.walk = 0; rat.face = 1; rat.moving = false; rat.gun = !!L.gunStart; rat.tpCool = 0; cheese = []; cheeseGot = 0;
   gnaw.p = 0; gnaw.near = false; grace = 0; atk = null; shake = 0; particles = []; clearT = 0; msgT = 0;
   ping.t = 0; ping.flash = 0; ping.count = 0; barrel.p = 0; barrel.near = false; barrel.opened = false;
   if (L.type === 'signal') {
@@ -1448,6 +1455,12 @@ function loadLevel(i) {
   } else {
     const b = rc(L.barrel[0], L.barrel[1]); barrel.x = b.x; barrel.y = b.y;
     cat.home.x = b.x - CELL_W * .26; cat.home.y = b.y + CELL_H * .12; cat.x = cat.home.x; cat.y = cat.home.y; cat.state = 'SLEEP'; cat.chase = 0; cat.target = null; cat.wait = 0;
+    if (L.type === 'lava') {
+      cat.state = 'PATROL'; barrel.opened = true; cat.x = b.x; cat.y = b.y;
+      const cells = []; for (let r = 0; r < ROWS; r++) for (let c = 5; c < COLS; c++) if (!(c === L.exit[0] && r === L.exit[1])) cells.push([c, r]);
+      for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+      for (let i = 0; i < L.cheeseCount; i++) { const p = rc(cells[i][0], cells[i][1]); cheese.push({x: p.x + (rnd() - .5) * CELL_W * .4, y: p.y + (rnd() - .5) * CELL_H * .4, got: false}); }
+    }
     const e = rc(L.eagle[0], L.eagle[1]); eagle.x = e.x; eagle.y = e.y; eagle.state = 'PATROL'; eagle.chase = 0; eagle.cool = 2; eagle.wait = .5; eagle.target = null;
   }
   state = 'CARD'; hud();
@@ -1465,7 +1478,7 @@ window.addEventListener('keydown', e => {
   if ((k === 'enter' || k === ' ') && state === 'CARD') startPlay();
   else if (k === 'enter' && state === 'GAMEOVER') restart();
   else if (k === 'enter' && state === 'CLEAR' && clearT > 1) advance();
-  else if (state === 'PLAY' && L.type === 'guard' && rat.gun && (k === 'e' || k === ' ')) teleport();
+  else if (state === 'PLAY' && L.type !== 'signal' && rat.gun && (k === 'e' || k === ' ')) teleport();
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 canvas.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * canvas.width / r.width; mouse.y = (e.clientY - r.top) * canvas.height / r.height; });
@@ -1476,7 +1489,7 @@ canvas.addEventListener('mousedown', e => {
   if (state === 'CARD') startPlay();
   else if (state === 'GAMEOVER') restart();
   else if (state === 'CLEAR' && clearT > 1) advance();
-  else if (state === 'PLAY' && L.type === 'guard' && rat.gun) teleport();
+  else if (state === 'PLAY' && L.type !== 'signal' && rat.gun) teleport();
 });
 function advance() { if (li < LEVELS.length - 1) { nextLevel(); } else restart(); }
 
@@ -1495,7 +1508,7 @@ function hud() {
     el.style.color = d <= 1 ? '#fca5a5' : '#facc15';
   } else {
     const names = {SLEEP: 'GUARDING', CHASE: 'CHASING!', ALERT: 'ALERTED!', RETURN: 'GOING BACK', PATROL: 'PATROLLING'};
-    el.textContent = '🐈 CAT: ' + (names[cat.state] || cat.state) + '   |   🦅 EAGLE: ' + (eagle.state === 'CHASE' ? 'CHASING!' : 'PATROLLING');
+    el.textContent = (L.type === 'lava' ? '🧀 ' + cheeseGot + '/' + L.cheeseNeed + '   |   ' : '') + '🐈 CAT: ' + (names[cat.state] || cat.state) + '   |   🦅 EAGLE: ' + (eagle.state === 'CHASE' ? 'CHASING!' : 'PATROLLING');
     el.style.color = (cat.state === 'CHASE' || cat.state === 'ALERT' || eagle.state === 'CHASE') ? '#fca5a5' : '#facc15';
   }
 }
@@ -1563,7 +1576,7 @@ function goto_(e, x, y, step) { const dx = x - e.x, dy = y - e.y, d = Math.hypot
 function walkTo(e, tx, ty, speed, dt) {
   const [c, r] = cellOf(e.x, e.y), [tc, tr] = cellOf(tx, ty), step = speed * dt;
   const nx = bfsNext(c, r, tc, tr);
-  if (!nx) return goto_(e, tx, ty, step);
+  if (!nx) return (c === tc && r === tr) ? goto_(e, tx, ty, step) : 0;
   let wx, wy;
   if (nx[0] > c) { wx = GRID_X + (c + 1) * CELL_W + 4; wy = GRID_Y + r * CELL_H + CELL_H / 2; }
   else if (nx[0] < c) { wx = GRID_X + c * CELL_W - 4; wy = GRID_Y + r * CELL_H + CELL_H / 2; }
@@ -1664,9 +1677,9 @@ function updateGuard(dt) {
     if (eagle.cool <= 0 && eDist <= 1) {
       eagle.state = 'CHASE'; eagle.chase = L.chaseDist * .75; audio.enemyAlert('eagle'); shake = 6; ping.flash = 1.4;
       if (cat.state !== 'CHASE') { cat.state = 'ALERT'; cat.target = rr.slice(); cat.wait = .6; audio.ping(); msg = 'The EAGLE pinged the cat: "rat spotted!"'; msgT = 2.4; }
-    } else patrol(eagle, egCell, 90, dt);
+    } else patrol(eagle, egCell, 90, dt, L.fly);
   } else if (eagle.state === 'CHASE') {
-    const moved = walkTo(eagle, rat.x, rat.y, 150, dt); eagle.chase -= moved;
+    const moved = L.fly ? goto_(eagle, rat.x, rat.y, 150 * dt) : walkTo(eagle, rat.x, rat.y, 150, dt); eagle.chase -= moved;
     if (eagle.chase <= 0) { eagle.state = 'PATROL'; eagle.cool = 3.5; eagle.wait = .5; eagle.target = null; }
   }
   if (ping.flash > 0) ping.flash = Math.max(0, ping.flash);
@@ -1675,24 +1688,29 @@ function updateGuard(dt) {
   if (Math.hypot(eagle.x - rat.x, eagle.y - rat.y) < RAD + 12) { startAttack(eagle.x, eagle.y, 'eagle'); return; }
   // --- barrel ---
   const bd = Math.hypot(rat.x - barrel.x, rat.y - barrel.y);
-  barrel.near = !barrel.opened && bd < RAD + 34;
+  barrel.near = L.type === 'guard' && !barrel.opened && bd < RAD + 34;
   if (barrel.near && (keys['e'] || keys[' '])) {
     if (cat.state === 'SLEEP') { /* the cat is lying right here: it woke already when we entered */ }
     barrel.p += dt / L.openTime; if (Math.random() < .3) particle(barrel.x, barrel.y, '#fde68a', 1, 5, 3, .06);
     if (barrel.p >= 1) openBarrel();
   } else barrel.p = Math.max(0, barrel.p - dt * 1.2);
   // --- exit ---
+  if (L.type === 'lava') {
+    for (const ch of cheese) if (!ch.got && Math.hypot(rat.x - ch.x, rat.y - ch.y) < RAD + 12) { ch.got = true; cheeseGot++; audio.doorOpen(); particle(ch.x, ch.y, '#fde047', 12, 6, 4, .05); if (cheeseGot === L.cheeseNeed) { msg = 'Enough cheese! The EXIT is open!'; msgT = 3; } }
+    if (L.lava.includes(rr[0])) { state = 'GAMEOVER'; atk = {who: 'lava'}; shake = 14; audio.catJumpScare(); hud(); return; }
+  }
   const ex = rc(L.exit[0], L.exit[1]);
-  if (Math.hypot(rat.x - ex.x, rat.y - ex.y) < RAD + 22) { state = 'CLEAR'; clearT = 0; audio.victoryFanfare(); particle(ex.x, ex.y, '#fde047', 50, 12, 5, .02); particle(ex.x, ex.y, '#38bdf8', 40, 10, 5, .02); hud(); }
+  if (Math.hypot(rat.x - ex.x, rat.y - ex.y) < RAD + 22 && (L.type !== 'lava' || cheeseGot >= L.cheeseNeed)) { state = 'CLEAR'; clearT = 0; audio.victoryFanfare(); particle(ex.x, ex.y, '#fde047', 50, 12, 5, .02); particle(ex.x, ex.y, '#38bdf8', 40, 10, 5, .02); hud(); }
 }
-function patrol(e, cell, speed, dt) {
+function patrol(e, cell, speed, dt, fly) {
   if (!e.target || Math.hypot(e.target.x - e.x, e.target.y - e.y) < 5) {
     if (e.target) { e.wait -= dt; if (e.wait > 0) return; }
     e.wait = .5 + rnd() * .8;
+    if (fly) { e.target = rc(Math.floor(rnd() * COLS), Math.floor(rnd() * ROWS)); return; }
     const opts = []; for (const [d, dc, dr] of [['N', 0, -1], ['S', 0, 1], ['W', -1, 0], ['E', 1, 0]]) if (doorAt(cell[0], cell[1], d)) opts.push([cell[0] + dc, cell[1] + dr]);
     const pick = opts[Math.floor(rnd() * opts.length)]; e.target = rc(pick[0], pick[1]); return;
   }
-  walkTo(e, e.target.x, e.target.y, speed, dt);
+  if (fly) goto_(e, e.target.x, e.target.y, speed * dt); else walkTo(e, e.target.x, e.target.y, speed, dt);
 }
 function openBarrel() {
   barrel.opened = true; barrel.p = 1; rat.gun = true; audio.victoryFanfare();
@@ -1731,9 +1749,15 @@ function claws(x, y, vertical) { // three claw scratches (clue: a cat lives behi
   for (let i = -1; i <= 1; i++) { ctx.beginPath(); if (vertical) { ctx.moveTo(-10, i * 7 - 8); ctx.lineTo(10, i * 7 + 8); } else { ctx.moveTo(i * 7 - 8, -10); ctx.lineTo(i * 7 + 8, 10); } ctx.stroke(); }
   ctx.restore();
 }
+function drawLavaRoom(rx, ry) {
+  const g = ctx.createLinearGradient(rx, ry, rx, ry + CELL_H); g.addColorStop(0, '#b91c1c'); g.addColorStop(.5, '#ea580c'); g.addColorStop(1, '#b91c1c');
+  ctx.fillStyle = g; ctx.fillRect(rx, ry, CELL_W, CELL_H);
+  for (let i = 0; i < 5; i++) { const bx = rx + ((i * 47 + time * (10 + i * 3)) % CELL_W), by = ry + 14 + ((i * 29 + Math.sin(time + i) * 12 + 40) % (CELL_H - 28)); ctx.fillStyle = 'rgba(253,224,71,.55)'; ctx.beginPath(); ctx.arc(bx, by, 5 + (i % 3) * 3, 0, 6.3); ctx.fill(); }
+}
 function drawRooms() {
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const rx = GRID_X + c * CELL_W, ry = GRID_Y + r * CELL_H;
+    if (L.lava && L.lava.includes(c)) { drawLavaRoom(rx, ry); continue; }
     const g = ctx.createLinearGradient(rx, ry, rx + CELL_W, ry + CELL_H);
     g.addColorStop(0, '#9eaba2'); g.addColorStop(.5, '#b0bcb4'); g.addColorStop(1, '#94a198');
     ctx.fillStyle = g; ctx.fillRect(rx, ry, CELL_W, CELL_H);
@@ -1803,10 +1827,10 @@ function drawCat() {
   spr('cat', cat.x, cat.y + by, k);
   ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cat.x + 31 * o, cat.y - 6 * o + by, 5.5 * o, 0, 6.3); ctx.fill(); ctx.stroke();
   ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cat.x + 31 * o, cat.y + by); ctx.quadraticCurveTo(cat.x + 42 * o, cat.y + 26 * o + by, cat.x + 25 * o, cat.y + 34 * o + by); ctx.stroke(); ctx.restore();
-  if (L.type === 'guard' && cat.state === 'SLEEP') { // Zzz
+  if (L.type !== 'signal' && cat.state === 'SLEEP') { // Zzz
     ctx.save(); ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + Math.round(14 + Math.sin(time * 2) * 2) + 'px monospace'; ctx.textAlign = 'left'; ctx.fillText('z z Z', cat.x + 10, cat.y - 28 - (time * 8 % 8)); ctx.restore();
   }
-  if (L.type === 'guard' && (cat.state === 'CHASE' || cat.state === 'ALERT')) { ctx.save(); ctx.fillStyle = '#ef4444'; ctx.font = 'bold 26px monospace'; ctx.textAlign = 'center'; ctx.fillText('!', cat.x, cat.y - 30); ctx.restore(); }
+  if (L.type !== 'signal' && (cat.state === 'CHASE' || cat.state === 'ALERT')) { ctx.save(); ctx.fillStyle = '#ef4444'; ctx.font = 'bold 26px monospace'; ctx.textAlign = 'center'; ctx.fillText('!', cat.x, cat.y - 30); ctx.restore(); }
 }
 function drawEagle() {
   if (L.type === 'signal') {
@@ -1849,14 +1873,19 @@ function drawBarrel() {
     ctx.fillStyle = '#334155'; ctx.fillRect(x - 48, y - 44, 96, 8); ctx.fillStyle = '#4ade80'; ctx.fillRect(x - 48, y - 44, 96 * barrel.p, 8); ctx.restore();
   }
 }
+function drawCheese() {
+  for (const ch of cheese) { if (ch.got) continue; ctx.save(); ctx.translate(ch.x, ch.y + Math.sin(time * 3 + ch.x) * 2);
+    ctx.fillStyle = '#f59e0b'; ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-9, 7); ctx.lineTo(9, 7); ctx.lineTo(0, -10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#d97706'; ctx.beginPath(); ctx.arc(-2, 3, 1.8, 0, 6.3); ctx.arc(3, 4, 1.5, 0, 6.3); ctx.fill(); ctx.restore(); }
+}
 function drawExit() {
   const e = rc(L.exit[0], L.exit[1]); ctx.save(); ctx.translate(e.x, e.y);
   const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 44); g.addColorStop(0, 'rgba(74,222,128,.7)'); g.addColorStop(1, 'rgba(74,222,128,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 44, 0, 6.3); ctx.fill();
   ctx.fillStyle = '#14532d'; ctx.fillRect(-16, -22, 32, 44); ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 3; ctx.strokeRect(-16, -22, 32, 44);
-  ctx.fillStyle = '#4ade80'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText('EXIT', 0, 4); ctx.restore();
+  ctx.fillStyle = '#4ade80'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText(L.type === 'lava' && cheeseGot < L.cheeseNeed ? 'LOCKED' : 'EXIT', 0, 4); ctx.restore();
 }
 function drawRange() {
-  if (!(L.type === 'guard' && rat.gun && state === 'PLAY')) return;
+  if (!(L.type !== 'signal' && rat.gun && state === 'PLAY')) return;
   const [c, r] = ratRoom(), c0 = Math.max(0, c - L.tpRange), c1 = Math.min(COLS - 1, c + L.tpRange), r0 = Math.max(0, r - L.tpRange), r1 = Math.min(ROWS - 1, r + L.tpRange);
   ctx.save(); ctx.strokeStyle = 'rgba(56,189,248,.8)'; ctx.fillStyle = 'rgba(56,189,248,.08)'; ctx.lineWidth = 3; ctx.setLineDash([10, 8]);
   const x = GRID_X + c0 * CELL_W, y = GRID_Y + r0 * CELL_H, w = (c1 - c0 + 1) * CELL_W, h = (r1 - r0 + 1) * CELL_H; ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
@@ -1871,10 +1900,13 @@ function drawCard() {
   ctx.fillStyle = 'rgba(8,10,28,.72)'; ctx.fillRect(0, 0, CW, CH); ctx.save(); ctx.translate(120, 90);
   panel(150, 150, 660, 420);
   txt('LEVEL ' + (li + 1) + ': ' + L.name, 480, 182, 30, '#1f2a6b', 'center');
-  txt('GOAL: ' + L.goal, 480, 238, L.type === 'guard' ? 16 : 18, '#7f1d1d', 'center');
+  txt('GOAL: ' + L.goal, 480, 238, L.type !== 'signal' ? 16 : 18, '#7f1d1d', 'center');
   if (L.type === 'signal') {
     txt('The EAGLE pings the cat every few seconds. The cat runs to the room\nwhere you were last seen. No portal gun: you only have your teeth!', 480, 290, 15, '#1f2a6b', 'center');
     txt('WASD / arrows ... move (push into a door to open it)\nSCRATCHED door ... a cat is waiting behind it. Don\'t open it!\nThe WIRE lights up on every ping. Follow it to the EARBUD box.\nHold SPACE at the box to gnaw the wire.', 190, 360, 15, '#1f2a6b', 'left');
+  } else if (L.type === 'lava') {
+    txt('A LAVA canyon splits the maze. The EAGLE flies over it, but the CAT\nguards the cheese on the far side. You have the gun again:\nteleport up to 3 rooms to jump over the lava. Don\'t land in it!', 480, 285, 14, '#1f2a6b', 'center');
+    txt('WASD / arrows ... move          CLICK (or E) ... teleport (3 rooms)\nGrab 5 CHEESE on the right side to unlock the EXIT\nThe cat chases you if you come close. The eagle pings it\nReach the EXIT in the top-right room', 190, 365, 15, '#1f2a6b', 'left');
   } else {
     txt('Your portal gun is locked in a BARREL, and the CAT guards it.\nStep into the cat\'s room to wake it, then RUN! It gives up after\na while and walks back. Loop around it and open the barrel!', 480, 285, 14, '#1f2a6b', 'center');
     txt('WASD / arrows ... move          EAGLE ... spots you, pings the cat\nHold E / SPACE at the barrel to open it (about 1 second)\nWith the gun: CLICK (or E) to teleport up to 2 rooms, through walls\nReach the green EXIT in the top-right room', 190, 365, 15, '#1f2a6b', 'left');
@@ -1918,17 +1950,17 @@ function render() {
   drawRooms();
   if (L.type === 'signal') { drawLastKnown(); drawWire(); }
   drawDoors();
-  if (L.type === 'signal') drawGnawBar(); else { drawExit(); drawBarrel(); drawRange(); }
+  if (L.type === 'signal') drawGnawBar(); else { drawExit(); if (L.type === 'guard') drawBarrel(); if (L.type === 'lava') drawCheese(); drawRange(); }
   if (state !== 'ATTACK' || atk.t < .5) drawRat();
   drawCat();
-  if (L.type === 'guard') drawEagle();
+  if (L.type !== 'signal') drawEagle();
   drawParticles(); drawBeams();
   if (L.type === 'signal') drawEagle();
   drawMsg();
   if (state === 'CARD') drawCard();
   if (state === 'ATTACK') drawAttack();
-  if (state === 'GAMEOVER') drawEndCard(atk && atk.who === 'eagle' ? 'THE EAGLE GOT YOU!' : 'THE CAT GOT YOU!', L.type === 'signal' ? 'The eagle told it exactly where you were.' : 'Lure the cat away, then loop around it!', '#7f1d1d', 'press R or click to try again');
-  if (state === 'CLEAR') drawEndCard(L.type === 'signal' ? 'SIGNAL CUT!' : 'LEVEL 2 CLEARED!', L.type === 'signal' ? 'The eagle can\'t talk to the cat anymore.\nNext: the cat guards your portal gun.' : 'You beat the cat, and the gun is yours.\nLevels 3 and 4 are coming next.', '#14532d', clearT > 1 ? (li < LEVELS.length - 1 ? 'press ENTER for the next level' : 'press ENTER to replay this level') : '');
+  if (state === 'GAMEOVER') drawEndCard(atk && atk.who === 'lava' ? 'YOU FELL IN THE LAVA!' : atk && atk.who === 'eagle' ? 'THE EAGLE GOT YOU!' : 'THE CAT GOT YOU!', L.type === 'signal' ? 'The eagle told it exactly where you were.' : L.type === 'lava' ? 'Teleport only onto the safe rooms!' : 'Lure the cat away, then loop around it!', '#7f1d1d', 'press R or click to try again');
+  if (state === 'CLEAR') drawEndCard(L.type === 'signal' ? 'SIGNAL CUT!' : 'LEVEL ' + (li + 1) + ' CLEARED!', L.type === 'signal' ? 'The eagle can\'t talk to the cat anymore.\nNext: the cat guards your portal gun.' : L.type === 'guard' ? 'You beat the cat, and the gun is yours.\nNext: the lava canyon.' : 'You crossed the lava and got the cheese!\nLevel 4 is coming next.', '#14532d', clearT > 1 ? (li < LEVELS.length - 1 ? 'press ENTER for the next level' : 'press ENTER to replay this level') : '');
   ctx.restore();
 }
 
