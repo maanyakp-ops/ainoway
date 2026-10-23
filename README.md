@@ -1,4 +1,4 @@
-# 🐀 Portal Rat: Takeshi's Cat Maze
+# 🐀 Maze of Doom
 
 An interactive 2D top-down arcade adventure inspired by the classic **Takeshi's Castle "Knock-Knock" Door Maze** (TBS Game Show).
 
